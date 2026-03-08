@@ -16,27 +16,16 @@ function findOpenClawBin(): BinResult | null {
   const ext = isWindows ? '.cmd' : ''
   const candidates: BinResult[] = []
 
-  // 1. Packaged app: find node binary and run openclaw.mjs directly
-  //    This avoids .cmd shim issues on Windows where node.exe may not be on PATH
-  //    IMPORTANT: Do NOT use process.execPath — that's the Electron binary itself
-  //    and would cause a fork bomb (each instance spawns another Electron app)
+  // 1. Packaged app: use Electron as Node.js runtime with ELECTRON_RUN_AS_NODE=1
+  //    This makes process.execPath behave as plain node (no window, no Electron APIs)
+  //    which avoids both fork bombs AND the need for node.js to be installed
   if (app.isPackaged) {
     const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules')
     const mjsEntry = path.join(unpackedDir, 'openclaw', 'openclaw.mjs')
 
     if (fs.existsSync(mjsEntry)) {
-      // Find a real node binary — NOT process.execPath (that's Electron!)
-      let nodeBin: string | null = null
-      try {
-        nodeBin = execSync(isWindows ? 'where node' : 'which node', {
-          encoding: 'utf-8',
-          timeout: 3000
-        }).trim().split('\n')[0]
-      } catch { /* node not on PATH */ }
-
-      if (nodeBin) {
-        candidates.push({ bin: nodeBin, script: mjsEntry })
-      }
+      // Use Electron itself as Node runtime (ELECTRON_RUN_AS_NODE=1 is set in env during spawn)
+      candidates.push({ bin: process.execPath, script: mjsEntry })
     }
 
     // Fallback to .bin shim
@@ -108,9 +97,10 @@ export class OpenClawGateway extends EventEmitter {
         return
       }
 
-      // Safety: NEVER spawn ourselves (Electron binary) — that causes a fork bomb
+      // Safety: NEVER spawn Electron binary without ELECTRON_RUN_AS_NODE
+      // Without it, process.execPath launches a full Electron app → fork bomb
       if (result.bin === process.execPath && !result.script) {
-        const err = new Error('SAFETY: Refusing to spawn Electron binary as OpenClaw gateway')
+        const err = new Error('SAFETY: Refusing to spawn Electron binary without script (fork bomb risk)')
         this.emit('log', err.message)
         reject(err)
         return
@@ -134,6 +124,13 @@ export class OpenClawGateway extends EventEmitter {
 
       const isWindows = process.platform === 'win32'
       const env = { ...process.env }
+
+      // When using Electron as Node runtime, set ELECTRON_RUN_AS_NODE=1
+      // This makes process.execPath behave as plain node.js (no window, no fork bomb)
+      if (result.script && result.bin === process.execPath) {
+        env.ELECTRON_RUN_AS_NODE = '1'
+      }
+
       if (this.configPath) {
         env.OPENCLAW_CONFIG_PATH = this.configPath
       }
