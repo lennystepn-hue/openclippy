@@ -17,10 +17,40 @@ export function setupIPC(
   })
 
   // Stream messages from OpenClaw back to renderer
+  let isHeartbeat = false
+
   chatClient.on('message', (msg) => {
+    // Detect heartbeat responses — don't show "HEARTBEAT_OK" to user
+    if (msg.type === 'response') {
+      const content = msg.content?.trim()
+      if (content === 'HEARTBEAT_OK' || content?.startsWith('HEARTBEAT_OK')) {
+        // Agent decided nothing to say — stay quiet
+        isHeartbeat = false
+        return
+      }
+
+      // If this was a heartbeat with actual content, show it as proactive speech
+      if (isHeartbeat && content) {
+        clippyWindow.webContents.send('clippy:speak', content)
+        isHeartbeat = false
+        return
+      }
+    }
+
+    // Track if current message is a heartbeat
+    if (msg.type === 'chunk' && !isHeartbeat) {
+      // Check if this looks like a heartbeat response starting
+      if (msg.content?.includes('HEARTBEAT_OK')) {
+        isHeartbeat = true
+        return
+      }
+    }
+
     switch (msg.type) {
       case 'chunk':
-        clippyWindow.webContents.send('chat:chunk', msg)
+        if (!isHeartbeat) {
+          clippyWindow.webContents.send('chat:chunk', msg)
+        }
         break
       case 'response':
         clippyWindow.webContents.send('chat:response', msg)

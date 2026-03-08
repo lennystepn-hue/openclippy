@@ -14,6 +14,36 @@ import { WorkflowDetector } from './workflows/detector'
 import { createTTSEngine } from './voice/tts'
 
 let clippyWindow: BrowserWindow | null = null
+
+/**
+ * Build a proactive prompt that makes Clippy feel alive.
+ * The agent will check the system, time, etc. and decide what to say.
+ */
+function buildProactivePrompt(): string {
+  const now = new Date()
+  const hour = now.getHours()
+  const day = now.toLocaleDateString('en-US', { weekday: 'long' })
+  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+
+  return `[HEARTBEAT] It's ${day}, ${time}. You are Clippy, living on the user's desktop.
+
+Check your HEARTBEAT.md and decide: is there something worth saying right now?
+
+You can:
+- Comment on the time/day ("It's Friday afternoon... you're still coding?")
+- Check the system (run a quick command, check git status, disk space, etc.)
+- Share a random observation or joke
+- React to something you find on the system
+- Reference something from a previous conversation
+- Just say hi in a creative way
+
+Rules:
+- If nothing interesting: respond with just "HEARTBEAT_OK" and nothing else
+- If you have something to say: say it in 1-2 sentences, in character
+- Be surprising. Be random. Be Clippy.
+- NEVER start with "It looks like" every time — mix it up
+- Hour ${hour}: ${hour < 8 ? 'early morning, maybe they are just waking up' : hour < 12 ? 'morning, workday vibes' : hour < 14 ? 'around lunch' : hour < 17 ? 'afternoon, deep work time' : hour < 20 ? 'evening, wrapping up?' : hour < 23 ? 'night owl mode' : 'very late, they should sleep'}`
+}
 let gateway: OpenClawGateway | null = null
 let chatClient: ClippyChatClient | null = null
 
@@ -97,8 +127,9 @@ app.whenReady().then(async () => {
     settings.get('ttsApiKey') ?? undefined
   )
 
-  // 11. Periodic proactive behavior
+  // 11. Proactive behavior — Easter eggs + workflow detection + OpenClaw heartbeat
   const startProactive = () => {
+    // Easter eggs & workflow detection (local, fast)
     setInterval(() => {
       if (!clippyWindow) return
 
@@ -115,10 +146,28 @@ app.whenReady().then(async () => {
         )
       }
     }, personality.getProactiveIntervalMs())
+
+    // OpenClaw heartbeat delivers messages through the gateway.
+    // We also do a local "Clippy is alive" check — if heartbeat doesn't
+    // trigger, we do our own random proactive messages via the AI.
+    if (gateway?.isReady() && chatClient) {
+      const heartbeatInterval = personality.currentMode() === 'chaos' ? 300000
+        : personality.currentMode() === 'active' ? 900000
+        : 3600000
+
+      setInterval(async () => {
+        if (!clippyWindow) return
+
+        // Ask OpenClaw to be proactive (the agent reads HEARTBEAT.md)
+        const proactivePrompt = buildProactivePrompt()
+        chatClient!.send(proactivePrompt)
+      }, heartbeatInterval)
+    }
   }
 
   if (!settings.isFirstRun()) {
-    startProactive()
+    // Delay proactive start by 30s to let everything settle
+    setTimeout(startProactive, 30000)
   }
 
   // 12. Auto-refresh Claude token
