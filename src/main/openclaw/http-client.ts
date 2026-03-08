@@ -135,10 +135,16 @@ export class ClippyChatClient extends EventEmitter {
     const decoder = new TextDecoder()
     let fullContent = ''
     let buffer = ''
+    let chunkCount = 0
+
+    console.log('[SSE] Stream started')
 
     while (true) {
       const { done, value } = await reader.read()
-      if (done) break
+      if (done) {
+        console.log(`[SSE] Stream ended (reader done). Chunks: ${chunkCount}, content length: ${fullContent.length}`)
+        break
+      }
 
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
@@ -148,6 +154,7 @@ export class ClippyChatClient extends EventEmitter {
         if (!line.startsWith('data: ')) continue
         const data = line.slice(6).trim()
         if (data === '[DONE]') {
+          console.log(`[SSE] [DONE] received. Total content: ${fullContent.length} chars`)
           if (fullContent) {
             this.addToHistory('assistant', fullContent)
           }
@@ -163,21 +170,24 @@ export class ClippyChatClient extends EventEmitter {
           const parsed = JSON.parse(data)
           const choice = parsed.choices?.[0]
 
-          if (!choice) continue
+          if (!choice) {
+            console.log('[SSE] No choice in chunk:', data.slice(0, 200))
+            continue
+          }
+
+          chunkCount++
 
           // Check for tool calls (OpenClaw agent executing tools)
           if (choice.delta?.tool_calls) {
             for (const tc of choice.delta.tool_calls) {
               if (tc.function?.name) {
+                console.log(`[SSE] Tool call: ${tc.function.name}`)
                 this.emit('message', {
                   type: 'tool-start',
                   content: tc.function.name,
                   toolName: tc.function.name,
                   done: false
                 } as StreamMessage)
-              }
-              if (tc.function?.arguments) {
-                // Tool arguments streaming — usually not needed for UI
               }
             }
           }
@@ -195,15 +205,19 @@ export class ClippyChatClient extends EventEmitter {
 
           // Check for finish reason
           if (choice.finish_reason === 'tool_calls') {
-            // Agent is executing tools, more content will follow
+            console.log('[SSE] Agent executing tools...')
             this.emit('message', {
               type: 'tool-result',
               content: 'Executing...',
               done: false
             } as StreamMessage)
           }
+
+          if (choice.finish_reason === 'stop') {
+            console.log('[SSE] finish_reason=stop')
+          }
         } catch {
-          // Skip malformed JSON lines
+          console.log('[SSE] Parse error for:', data.slice(0, 100))
         }
       }
     }
