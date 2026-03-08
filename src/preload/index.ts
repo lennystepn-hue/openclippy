@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('clippy', {
   onShowWizard: (callback: () => void) =>
     ipcRenderer.on('settings:showWizard', () => callback()),
 
+  // Shell
+  openExternal: (url: string) => ipcRenderer.send('shell:openExternal', url),
+
   // Window drag
   startDrag: () => ipcRenderer.send('window:startDrag'),
   dragMove: (dx: number, dy: number) => ipcRenderer.send('window:dragMove', dx, dy)

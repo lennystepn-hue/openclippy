@@ -55,6 +55,41 @@ export function initChat(widget: ClippyWidget): void {
     widget.speak(text, actions)
     widget.playAnimation('GetAttention')
   })
+
+  // Delegated click handler for copy buttons and links
+  document.querySelector('.bubble-content')?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+
+    // Copy button on code blocks
+    if (target.classList.contains('code-copy-btn')) {
+      e.preventDefault()
+      e.stopPropagation()
+      const targetId = target.getAttribute('data-target')
+      if (targetId) {
+        const codeEl = document.getElementById(targetId)
+        if (codeEl) {
+          navigator.clipboard.writeText(codeEl.textContent || '').then(() => {
+            target.classList.add('copied')
+            target.innerHTML = '&#x2713;'
+            setTimeout(() => {
+              target.classList.remove('copied')
+              target.innerHTML = '&#x2398;'
+            }, 2000)
+          })
+        }
+      }
+    }
+
+    // Clickable links — open in external browser
+    if (target.classList.contains('chat-link')) {
+      e.preventDefault()
+      e.stopPropagation()
+      const url = target.getAttribute('href')
+      if (url) {
+        window.clippy.openExternal(url)
+      }
+    }
+  })
 }
 
 function escapeHtml(text: string): string {
@@ -64,12 +99,18 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;')
 }
 
+let codeBlockCounter = 0
+
 function formatResponse(text: string): string {
-  // Basic markdown-ish formatting for the bubble
+  codeBlockCounter = 0
   return text
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    .replace(/```(\w*)\n([\s\S]*?)```/g, (_match, _lang, code) => {
+      const id = `code-block-${++codeBlockCounter}`
+      return `<div class="code-block-wrapper"><pre><code id="${id}">${escapeHtml(code)}</code></pre><button class="code-copy-btn" data-target="${id}" title="Copy">&#x2398;</button></div>`
+    })
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(?<![="'])(https?:\/\/[^\s<)]+)/g, '<a class="chat-link" href="$1">$1</a>')
     .replace(/\n/g, '<br>')
 }
 

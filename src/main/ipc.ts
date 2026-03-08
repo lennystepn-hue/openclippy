@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, app } from 'electron'
+import { ipcMain, BrowserWindow, app, shell } from 'electron'
 import path from 'path'
 import { ClippyChatClient } from './openclaw/http-client'
 import { PersonalityManager } from './personality'
@@ -192,6 +192,13 @@ export function setupIPC(
     }
 
     clippyWindow.webContents.send('settings:saved')
+  })
+
+  // Open external URLs in default browser
+  ipcMain.on('shell:openExternal', (_event, url: string) => {
+    if (typeof url === 'string' && /^https?:\/\//.test(url)) {
+      shell.openExternal(url)
+    }
   })
 
   // Reset setup — re-run wizard

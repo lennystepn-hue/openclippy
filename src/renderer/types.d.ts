@@ -22,6 +22,9 @@ declare global {
       setupApiKey: (provider: string, key: string) => Promise<boolean>
       checkAuthStatus: () => Promise<string>
 
+      // Shell
+      openExternal: (url: string) => void
+
       // Settings
       getSettings: () => Promise<Record<string, any>>
       updateSettings: (updates: Record<string, unknown>) => void
