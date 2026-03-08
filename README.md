@@ -1,26 +1,8 @@
 <div align="center">
 
-```
-    ╭──────────────────────────────────╮
-    │ It looks like you're reading a   │
-    │ README. Would you like help?     │
-    │                                  │
-    │  [ Yes, obviously ]  [ No ]      │
-    ╰──────────┬───────────────────────╯
-               │
-               ╰─╮
-                 │
-            ┌────┴────┐
-            │  ╭───╮  │
-            │  │ · ·│  │
-            │  │  ◡ │  │
-            │  ╰───╯  │
-            │ ╭─────╮ │
-            │ │     │ │
-            │ ╰──┬──╯ │
-            │    │    │
-            └────┴────┘
-```
+<img src="assets/clippy-wave.png" alt="Clippy waving" width="200">
+
+> *"It looks like you're reading a README. Would you like help?"*
 
 # OpenClippy
 
@@ -324,14 +306,9 @@ MIT — do whatever you want. Clippy is free. Clippy was always meant to be free
 
 <div align="center">
 
-```
-    ╭──────────────────────────────────╮
-    │                                  │
-    │  Star this repo or I'll keep     │
-    │  asking if you need help.        │
-    │                                  │
-    ╰──────────────────────────────────╯
-```
+<img src="assets/clippy-idle.png" alt="Clippy" width="150">
+
+*Star this repo or I'll keep asking if you need help.*
 
 **Made with 📎 and questionable life choices.**
 
