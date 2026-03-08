@@ -149,18 +149,24 @@ export class OpenClawGateway extends EventEmitter {
         if (!settled) { settled = true; reject(err) }
       })
 
-      this.process.stdout?.on('data', (data: Buffer) => {
-        const msg = data.toString()
-        if (!this.ready && (msg.includes('Gateway ready') || msg.includes('listening'))) {
+      const checkReady = (msg: string) => {
+        if (!this.ready && (msg.includes('Gateway ready') || msg.includes('listening on'))) {
           this.ready = true
           this.emit('ready')
           if (!settled) { settled = true; resolve() }
         }
+      }
+
+      this.process.stdout?.on('data', (data: Buffer) => {
+        const msg = data.toString()
+        checkReady(msg)
         this.emit('log', msg)
       })
 
       this.process.stderr?.on('data', (data: Buffer) => {
-        this.emit('log', `[stderr] ${data.toString()}`)
+        const msg = data.toString()
+        checkReady(msg)
+        this.emit('log', `[stderr] ${msg}`)
       })
 
       this.process.on('exit', (code) => {
