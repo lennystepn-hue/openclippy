@@ -1,0 +1,95 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  width: 100%;
+  height: 100%;
+}
+
+#clippy-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.clippy-sprite {
+  width: 124px;
+  height: 93px;
+  background-image: url('../assets/sprites/clippy-map.png');
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  cursor: grab;
+  -webkit-app-region: drag;
+}
+
+.clippy-bubble {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffcc;
+  border: 2px solid #000;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 200px;
+  max-width: 350px;
+  font-family: 'MS Sans Serif', Tahoma, sans-serif;
+  font-size: 13px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  -webkit-app-region: no-drag;
+}
+
+.clippy-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid #ffffcc;
+}
+
+.clippy-bubble.hidden { display: none; }
+
+.bubble-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #999;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  margin-top: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.bubble-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.bubble-actions button {
+  padding: 4px 12px;
+  background: #e0e0e0;
+  border: 1px solid #999;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  -webkit-app-region: no-drag;
+}
+
+.bubble-actions button:hover {
+  background: #d0d0d0;
+}
+
+.bubble-input-area.hidden { display: none; }
