@@ -9,19 +9,32 @@ directories:
 files:
   - dist/**/*
   - assets/**/*
+  - "!node_modules/**/*.md"
+  - "!node_modules/**/*.ts"
 
 mac:
   category: public.app-category.utilities
+  icon: build/icon.icns
   target:
     - dmg
     - zip
 
 win:
+  icon: build/icon.ico
   target:
     - nsis
 
+nsis:
+  oneClick: true
+  allowToChangeInstallationDirectory: false
+
 linux:
+  icon: build/icons
   category: Utility
   target:
     - AppImage
     - deb
+  maintainer: OpenClippy Contributors
+
+appImage:
+  artifactName: OpenClippy-${version}-${arch}.AppImage
