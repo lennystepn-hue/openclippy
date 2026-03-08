@@ -17,6 +17,8 @@ export class ClippyChatClient extends EventEmitter {
   private token: string
   private agentId: string
   private abortController: AbortController | null = null
+  private history: ChatMessage[] = []
+  private maxHistory = 50 // Keep last 50 messages to avoid token overflow
 
   constructor(port = 19789, token = '') {
     super()
@@ -29,6 +31,18 @@ export class ClippyChatClient extends EventEmitter {
     this.token = token
   }
 
+  clearHistory(): void {
+    this.history = []
+  }
+
+  private addToHistory(role: 'user' | 'assistant', content: string): void {
+    this.history.push({ role, content })
+    // Trim to max history size (keep pairs)
+    while (this.history.length > this.maxHistory) {
+      this.history.shift()
+    }
+  }
+
   /**
    * Send a message to OpenClaw agent. The agent has full tool access
    * and will autonomously execute tools as needed.
@@ -39,7 +53,13 @@ export class ClippyChatClient extends EventEmitter {
     if (systemPrompt) {
       messages.push({ role: 'system', content: systemPrompt })
     }
+
+    // Include conversation history for context
+    messages.push(...this.history)
     messages.push({ role: 'user', content: text })
+
+    // Track user message in history
+    this.history.push({ role: 'user', content: text })
 
     this.abortController = new AbortController()
 
@@ -96,6 +116,9 @@ export class ClippyChatClient extends EventEmitter {
           if (!line.startsWith('data: ')) continue
           const data = line.slice(6).trim()
           if (data === '[DONE]') {
+            if (fullContent) {
+              this.addToHistory('assistant', fullContent)
+            }
             this.emit('message', {
               type: 'response',
               content: fullContent,
@@ -155,6 +178,7 @@ export class ClippyChatClient extends EventEmitter {
 
       // If we get here without [DONE], still emit final
       if (fullContent) {
+        this.addToHistory('assistant', fullContent)
         this.emit('message', {
           type: 'response',
           content: fullContent,
