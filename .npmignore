@@ -1,0 +1,7 @@
+# Only ship the CLI tool to npm — not the Electron app
+*
+!cli/
+!cli/doctor.mjs
+!package.json
+!README.md
+!LICENSE
