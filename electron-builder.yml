@@ -12,6 +12,10 @@ files:
   - "!node_modules/**/*.md"
   - "!node_modules/**/*.ts"
 
+asarUnpack:
+  - node_modules/openclaw/**
+  - node_modules/.bin/openclaw*
+
 mac:
   category: public.app-category.utilities
   icon: build/icon.icns

@@ -1,6 +1,18 @@
 import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
+import { app } from 'electron'
 import { EventEmitter } from 'events'
+
+function findOpenClawBin(): string {
+  // In packaged app: resources/app.asar.unpacked/node_modules/.bin/openclaw
+  const isPackaged = app.isPackaged
+  const basePath = isPackaged
+    ? path.join(process.resourcesPath, 'app.asar.unpacked')
+    : path.join(__dirname, '../../..')
+
+  const ext = process.platform === 'win32' ? '.cmd' : ''
+  return path.join(basePath, 'node_modules', '.bin', `openclaw${ext}`)
+}
 
 export class OpenClawGateway extends EventEmitter {
   private process: ChildProcess | null = null
@@ -14,11 +26,13 @@ export class OpenClawGateway extends EventEmitter {
 
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const binPath = path.join(__dirname, '../../..', 'node_modules', '.bin', 'openclaw')
+      const binPath = findOpenClawBin()
+      const isWindows = process.platform === 'win32'
       this.process = spawn(binPath, ['start', '--port', String(this.port)], {
-        cwd: path.join(__dirname, '../../..'),
+        cwd: path.dirname(path.dirname(binPath)),
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: { ...process.env }
+        env: { ...process.env },
+        shell: isWindows
       })
 
       this.process.stdout?.on('data', (data: Buffer) => {
