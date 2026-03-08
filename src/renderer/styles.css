@@ -16,6 +16,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
+  -webkit-app-region: drag;
 }
 
 /* Clippy Sprite */
@@ -25,8 +26,8 @@ html, body {
   background-repeat: no-repeat;
   background-position: 0 0;
   image-rendering: pixelated;
-  cursor: grab;
-  -webkit-app-region: drag;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
   flex-shrink: 0;
 }
 
@@ -42,34 +43,51 @@ html, body {
 .clippy-waving { background-position: -1612px -2790px; }
 .clippy-listening { background-position: -124px -186px; }
 
-/* Speech Bubble */
+/* Speech Bubble — Classic Office 97 Style */
 .clippy-bubble {
   position: relative;
-  margin-bottom: 8px;
-  background: #ffffcc;
-  border: 2px solid #000;
-  border-radius: 8px;
-  padding: 12px;
-  width: 370px;
-  max-height: 480px;
+  margin-bottom: 12px;
+  background: #ffffe1;
+  border: 1px solid #000;
+  border-radius: 10px;
+  padding: 14px 16px;
+  width: 340px;
+  max-height: 440px;
   overflow-y: auto;
-  font-family: 'MS Sans Serif', Tahoma, sans-serif;
+  scrollbar-width: none; /* Firefox */
+  font-family: 'Segoe UI', Tahoma, 'MS Sans Serif', sans-serif;
   font-size: 13px;
-  box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  line-height: 1.5;
+  color: #000;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.15);
   -webkit-app-region: no-drag;
 }
 
+.clippy-bubble::-webkit-scrollbar {
+  display: none; /* Chrome/Edge */
+}
+
+/* Speech bubble tail pointing down to Clippy */
 .clippy-bubble::after {
   content: '';
   position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: -16px;
+  left: 40px;
   width: 0;
   height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 10px solid #ffffcc;
+  border: 8px solid transparent;
+  border-top: 8px solid #ffffe1;
+}
+
+.clippy-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 39px;
+  width: 0;
+  height: 0;
+  border: 9px solid transparent;
+  border-top: 9px solid #000;
 }
 
 .clippy-bubble.hidden { display: none; }

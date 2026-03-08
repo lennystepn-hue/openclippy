@@ -30,13 +30,11 @@ export class ClippyWidget {
     el.className = 'clippy-sprite'
     el.style.backgroundImage = `url('${spriteMapUrl}')`
     el.style.backgroundPosition = '0px 0px'
-    el.style.cursor = 'grab'
-    el.style.setProperty('-webkit-app-region', 'drag')
+    el.style.cursor = 'pointer'
 
-    // Double-click toggles chat
-    el.addEventListener('dblclick', () => this.toggleChat())
+    // Click toggles chat (no drag on sprite — use bubble area for drag)
+    el.addEventListener('click', () => this.toggleChat())
 
-    // Right-click context menu could go here
     return el
   }
 
