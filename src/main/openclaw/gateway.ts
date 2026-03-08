@@ -14,7 +14,8 @@ export class OpenClawGateway extends EventEmitter {
 
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.process = spawn('npx', ['openclaw', 'start', '--port', String(this.port)], {
+      const binPath = path.join(__dirname, '../../..', 'node_modules', '.bin', 'openclaw')
+      this.process = spawn(binPath, ['start', '--port', String(this.port)], {
         cwd: path.join(__dirname, '../../..'),
         stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env }
