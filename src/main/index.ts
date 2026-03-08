@@ -4,7 +4,7 @@ import { createClippyWindow } from './clippy-window'
 import { createTray } from './tray'
 import { OpenClawGateway } from './openclaw/gateway'
 import { ClippyChatClient } from './openclaw/http-client'
-import { initializeWorkspace, writeSoulFile } from './openclaw/config'
+import { initializeWorkspace, writeSoulFile, resolveModel } from './openclaw/config'
 import { setupIPC } from './ipc'
 import { Settings } from './settings'
 import { PersonalityManager } from './personality'
@@ -70,11 +70,33 @@ app.whenReady().then(async () => {
 
   // 4. Create HTTP chat client (talks to OpenClaw agent)
   chatClient = new ClippyChatClient(gateway?.getPort() ?? 19789)
+  chatClient.setModel(resolveModel(settings.get('provider') ?? undefined))
 
   try {
     await gateway.start()
     console.log('OpenClaw Gateway started on port', gateway.getPort())
-    chatClient.setGatewayReady(true)
+
+    // Verify the HTTP API actually works before marking ready
+    // (gateway may report "listening on" but not serve the expected endpoints)
+    let healthy = false
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await new Promise(r => setTimeout(r, 1000 * attempt))
+      const health = await chatClient.checkHealth()
+      console.log(`[health-check] attempt ${attempt}:`, JSON.stringify(health))
+      if (health.ok) {
+        healthy = true
+        break
+      }
+      console.warn(`[health-check] attempt ${attempt} failed:`, health.status, health.body || health.error)
+    }
+
+    if (healthy) {
+      chatClient.setGatewayReady(true)
+      console.log('OpenClaw Gateway verified — API is healthy')
+    } else {
+      console.error('OpenClaw Gateway started but API health check failed — chat will not work')
+      chatClient.setGatewayReady(true) // Still allow attempts, but user will see detailed errors
+    }
   } catch (err) {
     console.error('OpenClaw Gateway failed to start:', err)
     // App still works, just without AI backend — client shows friendly error

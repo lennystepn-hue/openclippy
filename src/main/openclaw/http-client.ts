@@ -20,12 +20,17 @@ export class ClippyChatClient extends EventEmitter {
   private history: ChatMessage[] = []
   private maxHistory = 50 // Keep last 50 messages to avoid token overflow
   private gatewayReady = false
+  private model = 'openclaw'
 
   constructor(port = 19789, token = '') {
     super()
     this.baseUrl = `http://127.0.0.1:${port}`
     this.token = token
     this.agentId = 'main'
+  }
+
+  setModel(model: string): void {
+    this.model = model
   }
 
   setGatewayReady(ready: boolean): void {
@@ -86,7 +91,7 @@ export class ClippyChatClient extends EventEmitter {
           ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
         },
         body: JSON.stringify({
-          model: 'openclaw',
+          model: this.model,
           messages,
           stream: true
         }),
@@ -95,9 +100,10 @@ export class ClippyChatClient extends EventEmitter {
 
       if (!response.ok) {
         const errText = await response.text().catch(() => response.statusText)
+        console.error(`[ClippyChat] POST ${this.baseUrl}/v1/chat/completions → ${response.status}: ${errText}`)
         this.emit('message', {
           type: 'response',
-          content: `Error: ${response.status} — ${errText}`,
+          content: `Error: ${response.status} — ${errText}\n\n_(Gateway: ${this.baseUrl})_`,
           done: true
         } as StreamMessage)
         return
@@ -299,20 +305,25 @@ export class ClippyChatClient extends EventEmitter {
     this.abortController = null
   }
 
-  async checkHealth(): Promise<boolean> {
+  async checkHealth(): Promise<{ ok: boolean; status?: number; body?: string; error?: string }> {
+    const url = `${this.baseUrl}/v1/chat/completions`
     try {
-      const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'openclaw',
+          model: this.model,
           messages: [{ role: 'user', content: 'ping' }],
           stream: false
         })
       })
-      return response.ok
-    } catch {
-      return false
+      if (response.ok) {
+        return { ok: true, status: response.status }
+      }
+      const body = await response.text().catch(() => response.statusText)
+      return { ok: false, status: response.status, body }
+    } catch (err: any) {
+      return { ok: false, error: err.message }
     }
   }
 }

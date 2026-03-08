@@ -287,7 +287,7 @@ This file is YOUR memory, Clippy. You read it at the start of every conversation
 /**
  * Resolve model ID from provider setting
  */
-function resolveModel(provider?: string): string {
+export function resolveModel(provider?: string): string {
   switch (provider) {
     case 'openai':
     case 'openai-oauth': return 'openai/gpt-4o'

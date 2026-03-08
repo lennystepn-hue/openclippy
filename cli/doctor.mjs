@@ -173,11 +173,14 @@ function checkOpenClawConfig() {
 async function checkGateway() {
   step('🚀', 'OpenClaw Gateway...')
 
+  // Use port 19787 for doctor tests to avoid conflict with a running app (19789)
+  const testPort = 19787
+
   return new Promise(resolve => {
     const isWin = platform() === 'win32'
     const proc = spawn(
       isWin ? 'openclaw.cmd' : 'openclaw',
-      ['gateway', '--port', '19789', '--auth', 'none', '--bind', 'loopback', '--allow-unconfigured'],
+      ['gateway', '--port', String(testPort), '--auth', 'none', '--bind', 'loopback', '--allow-unconfigured'],
       { stdio: ['pipe', 'pipe', 'pipe'], shell: isWin }
     )
 
@@ -191,13 +194,51 @@ async function checkGateway() {
       }
     }, 15000)
 
-    const checkOutput = (data) => {
+    const checkOutput = async (data) => {
       const msg = data.toString()
       if (!resolved && msg.includes('listening on')) {
+        // Gateway claims to be listening — now test the actual HTTP API
+        pass(`starts and listens on port ${testPort}`)
+
+        try {
+          const http = await import('http')
+          const body = JSON.stringify({
+            model: 'openclaw',
+            messages: [{ role: 'user', content: 'ping' }],
+            stream: false
+          })
+
+          const apiResult = await new Promise((res, rej) => {
+            const req = http.request({
+              hostname: '127.0.0.1',
+              port: testPort,
+              path: '/v1/chat/completions',
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+              timeout: 10000
+            }, (resp) => {
+              let data = ''
+              resp.on('data', chunk => data += chunk)
+              resp.on('end', () => res({ status: resp.statusCode, body: data }))
+            })
+            req.on('error', rej)
+            req.on('timeout', () => { req.destroy(); rej(new Error('timeout')) })
+            req.write(body)
+            req.end()
+          })
+
+          if (apiResult.status >= 200 && apiResult.status < 300) {
+            pass(`HTTP API responds (${apiResult.status})`)
+          } else {
+            fail(`HTTP API returned ${apiResult.status}: ${apiResult.body?.slice(0, 200)}`)
+          }
+        } catch (err) {
+          fail(`HTTP API test failed: ${err.message}`)
+        }
+
         resolved = true
         clearTimeout(timeout)
         proc.kill()
-        pass('starts and listens on port 19789')
         resolve(true)
       }
     }

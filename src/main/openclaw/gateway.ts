@@ -102,9 +102,6 @@ export class OpenClawGateway extends EventEmitter {
         return
       }
 
-      this.emit('log', `Starting OpenClaw from: ${result.bin}`)
-      this.emit('log', `Platform: ${process.platform}, shell: ${process.platform === 'win32' && !result.script}`)
-
       const gatewayArgs = [
         'gateway',
         '--port', String(this.port),
@@ -112,6 +109,10 @@ export class OpenClawGateway extends EventEmitter {
         '--bind', 'loopback',          // Only listen on 127.0.0.1
         '--allow-unconfigured'         // Don't require gateway.mode=local in config
       ]
+
+      this.emit('log', `Starting OpenClaw from: ${result.bin}`)
+      this.emit('log', `Platform: ${process.platform}, shell: ${process.platform === 'win32' && !result.script}`)
+      this.emit('log', `Args: ${gatewayArgs.join(' ')}`)
 
       // If we have a script entry (packaged .mjs), run it with node directly
       const spawnBin = result.bin
