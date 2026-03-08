@@ -157,22 +157,20 @@ OpenClippy is full of secrets. Here are some we're willing to share:
 
 ### Quick Setup (Recommended)
 
-One command does everything — checks Node.js, installs OpenClaw, runs the setup wizard:
+One command. Zero to Clippy on your desktop.
 
 ```bash
 npx openclippy
 ```
 
-<details>
-<summary>What this does</summary>
+That's it. Clippy walks you through everything with ASCII art and questionable humor:
 
-1. Checks Node.js version (22.12+ required)
-2. Installs [OpenClaw](https://github.com/openclaw/openclaw) globally if missing
-3. Runs OpenClaw onboard wizard (model selection, OAuth/API key)
+1. Checks Node.js (22.12+ required)
+2. Installs [OpenClaw](https://github.com/openclaw/openclaw) — the AI engine
+3. Runs the onboard wizard (model, auth, OAuth)
 4. Tests the gateway connection
-5. Tells you where to download the desktop app
-
-</details>
+5. Downloads the desktop app for your platform
+6. Installs and launches it
 
 ### Having Issues?
 
@@ -180,9 +178,9 @@ npx openclippy
 npx openclippy doctor
 ```
 
-Runs a full diagnostic with ASCII Clippy walking you through every check.
+Runs a full diagnostic — checks every component and tells you exactly what's broken.
 
-### Download the Desktop App
+### Manual Download
 
 | Platform | Download | How |
 |----------|----------|-----|
