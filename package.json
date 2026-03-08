@@ -1,6 +1,6 @@
 {
   "name": "openclippy",
-  "version": "0.4.0",
+  "version": "0.4.3",
   "description": "The iconic Clippy, reborn as an autonomous AI desktop assistant powered by OpenClaw",
   "author": "Lenny Enderle <github@lennystepn-hue>",
   "main": "dist/main/index.js",
