@@ -1,4 +1,6 @@
 import { AnimationStateMachine, ClippyState } from './animations'
+// @ts-ignore - PNG import handled by Vite
+import spriteMapUrl from '../../assets/sprites/clippy-map.png'
 
 export class ClippyWidget {
   private container: HTMLElement
@@ -18,8 +20,8 @@ export class ClippyWidget {
   private createSpriteElement(): HTMLElement {
     const el = document.createElement('div')
     el.id = 'clippy-sprite'
-    el.className = 'clippy-sprite'
-    el.style.cssText = '-webkit-app-region: drag; cursor: grab;'
+    el.className = 'clippy-sprite clippy-idle'
+    el.style.cssText = `-webkit-app-region: drag; cursor: grab; background-image: url('${spriteMapUrl}');`
     // Double-click toggles chat
     el.addEventListener('dblclick', () => this.toggleChat())
     return el

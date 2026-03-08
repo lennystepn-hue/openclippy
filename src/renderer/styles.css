@@ -22,9 +22,8 @@ html, body {
 .clippy-sprite {
   width: 124px;
   height: 93px;
-  background-image: url('../assets/sprites/clippy-map.png');
   background-repeat: no-repeat;
-  background-position: 0 0; /* idle frame */
+  background-position: 0 0;
   image-rendering: pixelated;
   cursor: grab;
   -webkit-app-region: drag;
