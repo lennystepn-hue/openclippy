@@ -77,7 +77,7 @@ app.whenReady().then(async () => {
   }
 
   // 4. Create HTTP chat client (talks to OpenClaw agent)
-  chatClient = new ClippyChatClient(gateway?.getPort() ?? 18789)
+  chatClient = new ClippyChatClient(gateway?.getPort() ?? 19789)
 
   // 5. Create Clippy window
   clippyWindow = createClippyWindow()

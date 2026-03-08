@@ -18,7 +18,7 @@ export class ClippyChatClient extends EventEmitter {
   private agentId: string
   private abortController: AbortController | null = null
 
-  constructor(port = 18789, token = '') {
+  constructor(port = 19789, token = '') {
     super()
     this.baseUrl = `http://127.0.0.1:${port}`
     this.token = token

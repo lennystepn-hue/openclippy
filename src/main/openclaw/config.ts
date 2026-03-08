@@ -78,19 +78,22 @@ function heartbeatConfig(personality: 'chill' | 'active' | 'chaos') {
       every: '60m',
       target: 'last',
       directPolicy: 'allow',
-      activeHours: { start: '09:00', end: '22:00' }
+      prompt: 'HEARTBEAT',
+      ackMaxChars: 200
     },
     active: {
       every: '15m',
       target: 'last',
       directPolicy: 'allow',
-      activeHours: { start: '08:00', end: '23:00' }
+      prompt: 'HEARTBEAT',
+      ackMaxChars: 300
     },
     chaos: {
       every: '5m',
       target: 'last',
       directPolicy: 'allow',
-      // No active hours — Chaos Mode never sleeps
+      prompt: 'HEARTBEAT',
+      ackMaxChars: 400
     }
   }
   return configs[personality]
@@ -219,59 +222,85 @@ Pick ONE of these randomly each heartbeat:
 }
 
 /**
+ * Resolve model ID from provider setting
+ */
+function resolveModel(provider?: string): string {
+  switch (provider) {
+    case 'openai':
+    case 'openai-oauth': return 'openai/gpt-4o'
+    case 'deepseek': return 'deepseek/deepseek-chat'
+    case 'ollama': return 'ollama/llama3'
+    default: return 'anthropic/claude-sonnet-4-5'
+  }
+}
+
+/**
  * Build the OpenClaw configuration file (openclaw.json)
+ *
+ * Schema must match the official OpenClaw config reference.
+ * See: node_modules/openclaw/docs/gateway/configuration-examples.md
  */
 export function buildAndWriteConfig(settings: ClippyUserSettings): string {
   const dataDir = getOpenClawDataDir()
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
 
-  const port = settings.gatewayPort ?? 18789
+  const port = settings.gatewayPort ?? 19789 // Avoid conflict with global gateway on 18789
   const workspaceDir = getWorkspaceDir()
+  const model = resolveModel(settings.provider)
 
+  // Config follows the official OpenClaw schema exactly
   const config: Record<string, any> = {
+    // Gateway settings
     gateway: {
+      mode: 'local',
       port,
+      bind: 'loopback',
       auth: {
-        mode: 'none'  // Local only, no auth needed
+        mode: 'none'  // Local-only, Electron app talks directly
       },
+      controlUi: { enabled: false },
       http: {
         endpoints: {
-          chatCompletions: { enabled: true },
-          toolsInvoke: { enabled: true }
+          chatCompletions: { enabled: true }
         }
       }
     },
+
+    // Agent runtime
     agents: {
       defaults: {
         workspace: workspaceDir,
-        model: 'anthropic/claude-opus-4-6',
-        heartbeat: heartbeatConfig(settings.personality ?? 'active')
-      },
-      list: [
-        {
-          id: 'main',
-          workspace: workspaceDir
-        }
-      ]
-    },
-    tools: {
-      profile: 'full',
-      exec: {
-        host: 'gateway',
-        security: 'full'
+        model: { primary: model },
+        heartbeat: heartbeatConfig(settings.personality ?? 'active'),
+        timeoutSeconds: 600
       }
+    },
+
+    // Tools configuration
+    tools: {
+      allow: ['exec', 'process', 'read', 'write', 'edit', 'apply_patch', 'browser', 'web_search', 'web_fetch', 'cron'],
+      exec: {
+        backgroundMs: 10000,
+        timeoutSec: 300
+      }
+    },
+
+    // Cron for automations
+    cron: {
+      enabled: true,
+      maxConcurrentRuns: 1
     }
   }
 
-  // Set model provider based on settings
-  if (settings.provider === 'claude-oauth' || !settings.provider) {
-    config.agents.defaults.model = 'anthropic/claude-opus-4-6'
-  } else if (settings.provider === 'openai') {
-    config.agents.defaults.model = 'openai/gpt-4o'
-  } else if (settings.provider === 'deepseek') {
-    config.agents.defaults.model = 'deepseek/deepseek-chat'
-  } else if (settings.provider === 'ollama') {
-    config.agents.defaults.model = 'ollama/llama3'
+  // Add API key to environment if provided
+  if (settings.apiKey) {
+    if (settings.provider === 'anthropic-api') {
+      config.env = { ANTHROPIC_API_KEY: settings.apiKey }
+    } else if (settings.provider === 'openai') {
+      config.env = { OPENAI_API_KEY: settings.apiKey }
+    } else if (settings.provider === 'deepseek') {
+      config.env = { DEEPSEEK_API_KEY: settings.apiKey }
+    }
   }
 
   const configPath = path.join(dataDir, 'openclaw.json')

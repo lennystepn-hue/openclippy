@@ -1,6 +1,7 @@
 import { spawn, ChildProcess, execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
+import os from 'os'
 import { app } from 'electron'
 import { EventEmitter } from 'events'
 
@@ -50,7 +51,7 @@ export class OpenClawGateway extends EventEmitter {
   private configPath: string | null = null
   private ready = false
 
-  constructor(port = 18789) {
+  constructor(port = 19789) {
     super()
     this.port = port
   }
@@ -77,16 +78,32 @@ export class OpenClawGateway extends EventEmitter {
 
       this.emit('log', `Starting OpenClaw from: ${binPath}`)
 
-      const args = ['start', '--port', String(this.port)]
-      if (this.configPath) {
-        args.push('--config', this.configPath)
-      }
+      const args = [
+        'gateway',
+        '--port', String(this.port),
+        '--auth', 'none',              // Local only, no auth needed
+        '--bind', 'loopback',          // Only listen on 127.0.0.1
+        '--allow-unconfigured'         // Don't require gateway.mode=local in config
+      ]
 
       const isWindows = process.platform === 'win32'
+      const env = { ...process.env }
+      if (this.configPath) {
+        env.OPENCLAW_CONFIG_PATH = this.configPath
+      }
+      // Share state with the global OpenClaw installation so Clippy
+      // can use the same API keys, OAuth tokens, and auth profiles
+      if (!env.OPENCLAW_STATE_DIR) {
+        const globalStateDir = path.join(os.homedir(), '.openclaw')
+        if (fs.existsSync(globalStateDir)) {
+          env.OPENCLAW_STATE_DIR = globalStateDir
+        }
+      }
+
       try {
         this.process = spawn(binPath, args, {
           stdio: ['pipe', 'pipe', 'pipe'],
-          env: { ...process.env },
+          env,
           shell: isWindows
         })
       } catch (err) {
