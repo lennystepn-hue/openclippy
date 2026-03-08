@@ -30,7 +30,11 @@ app.whenReady().then(async () => {
 
   // 3. Create Clippy window
   clippyWindow = createClippyWindow()
-  clippyWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+  if (process.env.ELECTRON_RENDERER_URL) {
+    clippyWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
+  } else {
+    clippyWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+  }
 
   // 4. Setup IPC
   if (chatClient) {
