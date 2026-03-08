@@ -457,13 +457,18 @@ async function downloadAndInstall() {
     info('The installer window will open. Follow the prompts.')
     blank()
 
-    return new Promise(resolve => {
-      const proc = spawn(downloadPath, [], { detached: true, stdio: 'ignore' })
-      proc.unref()
+    // Use 'start' command on Windows — avoids EBUSY from antivirus file locks
+    try {
+      execSync(`start "" "${downloadPath}"`, { shell: true, timeout: 10000 })
       console.log(`  ${c.green}✓${c.reset}  Installer launched!`)
       info('OpenClippy will start automatically after installation.')
-      resolve(true)
-    })
+      return true
+    } catch {
+      // Fallback: just tell the user where the file is
+      console.log(`  ${c.yellow}!${c.reset}  Could not launch installer automatically.`)
+      info(`Run it manually: ${c.cyan}${downloadPath}${c.reset}`)
+      return true
+    }
 
   } else if (p === 'darwin') {
     step('🔧', 'Opening installer...')
@@ -704,7 +709,7 @@ async function setup() {
 const command = process.argv[2]
 
 console.log()
-console.log(`  ${c.bold}${c.yellow}📎 OpenClippy${c.reset} ${c.dim}v0.5.2${c.reset}`)
+console.log(`  ${c.bold}${c.yellow}📎 OpenClippy${c.reset} ${c.dim}v0.5.3${c.reset}`)
 console.log(`  ${c.dim}The paperclip that never left.${c.reset}`)
 console.log()
 
