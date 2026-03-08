@@ -1,0 +1,27 @@
+appId: com.openclippy.app
+productName: OpenClippy
+copyright: Copyright (c) 2026 OpenClippy Contributors
+
+directories:
+  output: out
+  buildResources: build
+
+files:
+  - dist/**/*
+  - assets/**/*
+
+mac:
+  category: public.app-category.utilities
+  target:
+    - dmg
+    - zip
+
+win:
+  target:
+    - nsis
+
+linux:
+  category: Utility
+  target:
+    - AppImage
+    - deb
