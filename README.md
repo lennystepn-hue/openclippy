@@ -155,18 +155,34 @@ OpenClippy is full of secrets. Here are some we're willing to share:
 
 ## Installation
 
-### Prerequisites
+### Quick Setup (Recommended)
 
-OpenClippy uses [OpenClaw](https://github.com/openclaw/openclaw) as its AI engine. You need it installed globally:
+One command does everything — checks Node.js, installs OpenClaw, runs the setup wizard:
 
 ```bash
-# Requires Node.js 22.12+
-npm install -g openclaw
+npx openclippy
 ```
 
-Verify it works: `openclaw --version`
+<details>
+<summary>What this does</summary>
 
-### Download
+1. Checks Node.js version (22.12+ required)
+2. Installs [OpenClaw](https://github.com/openclaw/openclaw) globally if missing
+3. Runs OpenClaw onboard wizard (model selection, OAuth/API key)
+4. Tests the gateway connection
+5. Tells you where to download the desktop app
+
+</details>
+
+### Having Issues?
+
+```bash
+npx openclippy doctor
+```
+
+Runs a full diagnostic with ASCII Clippy walking you through every check.
+
+### Download the Desktop App
 
 | Platform | Download | How |
 |----------|----------|-----|
