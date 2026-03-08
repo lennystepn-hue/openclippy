@@ -78,7 +78,12 @@ export class ClippyWidget {
     el.id = 'clippy-bubble'
     el.className = 'clippy-bubble hidden'
     el.innerHTML = `
+      <div class="bubble-header hidden">
+        <button class="bubble-history-btn" title="Chat history">&#x1F552;</button>
+        <button class="bubble-newchat-btn" title="New chat">&#x2795;</button>
+      </div>
       <div class="bubble-content"></div>
+      <div class="bubble-history-panel hidden"></div>
       <div class="bubble-input-area hidden">
         <div class="bubble-input-row">
           <input type="text" class="bubble-input" placeholder="Ask Clippy..." />
@@ -144,7 +149,9 @@ export class ClippyWidget {
 
   showChat(): void {
     const inputArea = this.bubbleEl.querySelector('.bubble-input-area') as HTMLElement
+    const header = this.bubbleEl.querySelector('.bubble-header') as HTMLElement
     inputArea.classList.remove('hidden')
+    header.classList.remove('hidden')
     this.bubbleEl.classList.remove('hidden')
     this.chatVisible = true
     const input = this.bubbleEl.querySelector('.bubble-input') as HTMLInputElement
@@ -153,7 +160,9 @@ export class ClippyWidget {
 
   hideChat(): void {
     const inputArea = this.bubbleEl.querySelector('.bubble-input-area') as HTMLElement
+    const header = this.bubbleEl.querySelector('.bubble-header') as HTMLElement
     inputArea.classList.add('hidden')
+    header.classList.add('hidden')
     this.chatVisible = false
   }
 

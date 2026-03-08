@@ -519,3 +519,73 @@ code {
 .settings-rerun-btn:hover {
   background: #d0d0d0;
 }
+
+/* Chat header */
+.bubble-header {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #ddd;
+}
+
+.bubble-header.hidden {
+  display: none;
+}
+
+.bubble-history-btn,
+.bubble-newchat-btn {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.bubble-history-btn:hover,
+.bubble-newchat-btn:hover {
+  background: #e8e8e8;
+}
+
+/* History panel */
+.bubble-history-panel {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.bubble-history-panel.hidden {
+  display: none;
+}
+
+.history-empty {
+  color: #888;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.history-item {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.history-item:hover {
+  background: #f5f5e8;
+}
+
+.history-title {
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-date {
+  font-size: 10px;
+  color: #888;
+  margin-top: 2px;
+}

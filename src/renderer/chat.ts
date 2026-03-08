@@ -120,6 +120,77 @@ export function initChat(widget: ClippyWidget): void {
       }
     }
   })
+
+  // History button
+  const historyBtn = document.querySelector('.bubble-history-btn')
+  const historyPanel = document.querySelector('.bubble-history-panel') as HTMLElement
+  const contentEl = document.querySelector('.bubble-content') as HTMLElement
+
+  historyBtn?.addEventListener('click', async () => {
+    const isVisible = !historyPanel.classList.contains('hidden')
+    if (isVisible) {
+      historyPanel.classList.add('hidden')
+      contentEl.classList.remove('hidden')
+      return
+    }
+
+    const conversations = await window.clippy.listHistory()
+    if (conversations.length === 0) {
+      historyPanel.innerHTML = '<div class="history-empty">No previous chats yet.</div>'
+    } else {
+      historyPanel.innerHTML = conversations.map(c => {
+        const date = new Date(c.createdAt).toLocaleDateString('de-DE', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        })
+        return `<div class="history-item" data-id="${c.id}">
+          <div class="history-title">${escapeHtml(c.title)}</div>
+          <div class="history-date">${date}</div>
+        </div>`
+      }).join('')
+    }
+
+    contentEl.classList.add('hidden')
+    historyPanel.classList.remove('hidden')
+  })
+
+  // Click on history item to load
+  historyPanel?.addEventListener('click', async (e) => {
+    const item = (e.target as HTMLElement).closest('.history-item') as HTMLElement
+    if (!item) return
+    const id = item.dataset.id
+    if (!id) return
+
+    const convo = await window.clippy.loadHistory(id)
+    if (!convo) return
+
+    let html = ''
+    for (const msg of convo.messages) {
+      if (msg.role === 'user') {
+        html += `<div class="chat-user">${escapeHtml(msg.content)}</div>`
+      } else {
+        html += formatResponse(msg.content)
+      }
+    }
+
+    historyPanel.classList.add('hidden')
+    contentEl.classList.remove('hidden')
+    contentEl.innerHTML = html
+  })
+
+  // New chat button
+  const newChatBtn = document.querySelector('.bubble-newchat-btn')
+  newChatBtn?.addEventListener('click', () => {
+    window.clippy.newChat()
+  })
+
+  // Handle chat cleared
+  window.clippy.onChatCleared(() => {
+    const content = document.querySelector('.bubble-content') as HTMLElement
+    if (content) {
+      content.innerHTML = '<span style="color:#888; font-size:12px;">Ask me anything...</span>'
+    }
+    currentResponse = ''
+  })
 }
 
 function escapeHtml(text: string): string {
