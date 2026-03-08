@@ -45,6 +45,14 @@ contextBridge.exposeInMainWorld('clippy', {
   sendMessageWithImage: (text: string, imageDataUrl: string) =>
     ipcRenderer.send('chat:sendWithImage', text, imageDataUrl),
 
+  // History
+  listHistory: () => ipcRenderer.invoke('history:list'),
+  loadHistory: (id: string) => ipcRenderer.invoke('history:load', id),
+  deleteHistory: (id: string) => ipcRenderer.send('history:delete', id),
+  newChat: () => ipcRenderer.send('history:newChat'),
+  onChatCleared: (callback: () => void) =>
+    ipcRenderer.on('chat:cleared', () => callback()),
+
   // Window drag
   startDrag: () => ipcRenderer.send('window:startDrag'),
   dragMove: (dx: number, dy: number) => ipcRenderer.send('window:dragMove', dx, dy)

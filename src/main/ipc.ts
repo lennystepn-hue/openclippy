@@ -4,6 +4,7 @@ import { ClippyChatClient } from './openclaw/http-client'
 import { PersonalityManager } from './personality'
 import { Settings } from './settings'
 import { writeSoulFile } from './openclaw/config'
+import { saveConversation, listConversations, loadConversation, deleteConversation } from './chat-history'
 
 export function setupIPC(
   clippyWindow: BrowserWindow,
@@ -11,8 +12,13 @@ export function setupIPC(
   personality: PersonalityManager,
   settings: Settings
 ): void {
+  // Conversation tracking state
+  let currentConvoId = new Date().toISOString().replace(/[:.]/g, '-')
+  let currentConvoMessages: { role: string; content: string }[] = []
+
   // Chat — sends to OpenClaw agent (which has full tool access)
   ipcMain.on('chat:send', (_event, text: string) => {
+    currentConvoMessages.push({ role: 'user', content: text })
     chatClient.send(text)
   })
 
@@ -34,6 +40,7 @@ export function setupIPC(
 
   // Chat with image
   ipcMain.on('chat:sendWithImage', (_event, text: string, imageDataUrl: string) => {
+    currentConvoMessages.push({ role: 'user', content: text })
     chatClient.sendWithImage(text, imageDataUrl)
   })
 
@@ -87,6 +94,16 @@ export function setupIPC(
         break
       case 'response':
         clippyWindow.webContents.send('chat:response', msg)
+        if (msg.content && !isHeartbeat) {
+          currentConvoMessages.push({ role: 'assistant', content: msg.content })
+          const title = currentConvoMessages.find(m => m.role === 'user')?.content?.slice(0, 50) || 'Chat'
+          saveConversation({
+            id: currentConvoId,
+            title,
+            createdAt: new Date().toISOString(),
+            messages: currentConvoMessages
+          })
+        }
         break
       case 'tool-start':
         clippyWindow.webContents.send('chat:tool', {
@@ -213,6 +230,26 @@ export function setupIPC(
     }
 
     clippyWindow.webContents.send('settings:saved')
+  })
+
+  // History
+  ipcMain.handle('history:list', () => {
+    return listConversations()
+  })
+
+  ipcMain.handle('history:load', (_event, id: string) => {
+    return loadConversation(id)
+  })
+
+  ipcMain.on('history:delete', (_event, id: string) => {
+    deleteConversation(id)
+  })
+
+  ipcMain.on('history:newChat', () => {
+    currentConvoId = new Date().toISOString().replace(/[:.]/g, '-')
+    currentConvoMessages = []
+    chatClient.clearHistory()
+    clippyWindow.webContents.send('chat:cleared')
   })
 
   // Open external URLs in default browser

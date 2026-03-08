@@ -37,6 +37,13 @@ declare global {
       onSettingsSaved: (callback: () => void) => void
       onShowWizard: (callback: () => void) => void
 
+      // History
+      listHistory: () => Promise<{ id: string; title: string; createdAt: string }[]>
+      loadHistory: (id: string) => Promise<{ id: string; title: string; createdAt: string; messages: { role: string; content: string }[] } | null>
+      deleteHistory: (id: string) => void
+      newChat: () => void
+      onChatCleared: (callback: () => void) => void
+
       // Window drag
       startDrag: () => void
       dragMove: (dx: number, dy: number) => void
