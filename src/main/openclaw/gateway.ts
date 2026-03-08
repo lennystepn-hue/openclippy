@@ -24,11 +24,19 @@ function findOpenClawBin(): BinResult | null {
   // 1. Global install (works on all platforms — recommended for end users)
   //    Check this FIRST so packaged apps find it reliably
   try {
-    const globalPath = execSync(isWindows ? 'where openclaw' : 'which openclaw', {
+    const output = execSync(isWindows ? 'where openclaw' : 'which openclaw', {
       encoding: 'utf-8',
       timeout: 3000
-    }).trim().split('\n')[0]
-    if (globalPath) candidates.push({ bin: globalPath })
+    }).trim()
+    // `where` on Windows may return multiple lines (openclaw + openclaw.cmd)
+    // Prefer the .cmd variant on Windows as it's directly executable via shell
+    const lines = output.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+    if (isWindows) {
+      const cmdLine = lines.find(l => l.endsWith('.cmd'))
+      candidates.push({ bin: cmdLine || lines[0] })
+    } else if (lines[0]) {
+      candidates.push({ bin: lines[0] })
+    }
   } catch {
     // not globally installed
   }
@@ -94,7 +102,8 @@ export class OpenClawGateway extends EventEmitter {
         return
       }
 
-      this.emit('log', `Starting OpenClaw from: ${result.script || result.bin}`)
+      this.emit('log', `Starting OpenClaw from: ${result.bin}`)
+      this.emit('log', `Platform: ${process.platform}, shell: ${process.platform === 'win32' && !result.script}`)
 
       const gatewayArgs = [
         'gateway',
@@ -169,13 +178,14 @@ export class OpenClawGateway extends EventEmitter {
         this.emit('log', `[stderr] ${msg}`)
       })
 
-      this.process.on('exit', (code) => {
+      this.process.on('exit', (code, signal) => {
         const wasReady = this.ready
         this.ready = false
+        this.emit('log', `OpenClaw process exited: code=${code}, signal=${signal}, wasReady=${wasReady}`)
         this.emit('exit', code)
         if (!settled && !wasReady) {
           settled = true
-          reject(new Error(`OpenClaw exited with code ${code}`))
+          reject(new Error(`OpenClaw exited with code ${code} (signal: ${signal})`))
         }
       })
 
