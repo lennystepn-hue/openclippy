@@ -183,6 +183,55 @@ export function initChat(widget: ClippyWidget): void {
     window.clippy.newChat()
   })
 
+  // Drag & drop files
+  const bubbleEl = document.getElementById('clippy-bubble')
+  if (bubbleEl) {
+    bubbleEl.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      bubbleEl.classList.add('drag-over')
+    })
+
+    bubbleEl.addEventListener('dragleave', (e) => {
+      e.preventDefault()
+      bubbleEl.classList.remove('drag-over')
+    })
+
+    bubbleEl.addEventListener('drop', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      bubbleEl.classList.remove('drag-over')
+
+      const files = e.dataTransfer?.files
+      if (!files || files.length === 0) return
+
+      for (const file of Array.from(files)) {
+        const filePath = (file as any).path as string
+        if (!filePath) continue
+
+        const ext = filePath.split('.').pop()?.toLowerCase() || ''
+        const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']
+        const fileName = filePath.split(/[/\\]/).pop() || 'file'
+
+        if (imageExts.includes(ext)) {
+          widget.speak(
+            `<div class="chat-user">\u{1F4CE} ${escapeHtml(fileName)}</div>` +
+            `<div class="chat-thinking">Analyzing image...</div>`
+          )
+          widget.setState('thinking')
+          window.clippy.sendDroppedFile(filePath, true)
+        } else {
+          widget.speak(
+            `<div class="chat-user">\u{1F4CE} ${escapeHtml(fileName)}</div>` +
+            `<div class="chat-thinking">Reading file...</div>`
+          )
+          widget.setState('thinking')
+          window.clippy.sendDroppedFile(filePath, false)
+        }
+      }
+    })
+  }
+
   // Handle chat cleared
   window.clippy.onChatCleared(() => {
     const content = document.querySelector('.bubble-content') as HTMLElement

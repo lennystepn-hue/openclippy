@@ -25,15 +25,68 @@ export function setupIPC(
   // Screenshot capture
   ipcMain.handle('screenshot:capture', async () => {
     try {
-      const sources = await desktopCapturer.getSources({
-        types: ['screen'],
-        thumbnailSize: { width: 1920, height: 1080 }
-      })
-      if (sources.length === 0) return null
-      const screenshot = sources[0].thumbnail.toPNG()
-      return `data:image/png;base64,${screenshot.toString('base64')}`
+      // Hide Clippy window briefly so it's not in the screenshot
+      const wasVisible = clippyWindow.isVisible()
+      if (wasVisible) clippyWindow.hide()
+
+      // Small delay to let the window actually disappear
+      await new Promise(r => setTimeout(r, 200))
+
+      let dataUrl: string | null = null
+
+      // Try desktopCapturer first (works on X11 and Windows)
+      try {
+        const sources = await desktopCapturer.getSources({
+          types: ['screen'],
+          thumbnailSize: { width: 1920, height: 1080 }
+        })
+        if (sources.length > 0) {
+          const screenshot = sources[0].thumbnail.toPNG()
+          if (screenshot.length > 100) { // Sanity check — empty captures return tiny buffers
+            dataUrl = `data:image/png;base64,${screenshot.toString('base64')}`
+          }
+        }
+      } catch (captureErr) {
+        console.error('desktopCapturer failed:', captureErr)
+      }
+
+      // Fallback for Linux: use native screenshot tools
+      if (!dataUrl && process.platform === 'linux') {
+        try {
+          const { execSync } = await import('child_process')
+          const tmpPath = path.join(app.getPath('temp'), 'clippy-screenshot.png')
+          // Try gnome-screenshot, then scrot, then import (ImageMagick)
+          const cmds = [
+            `gnome-screenshot -f "${tmpPath}" 2>/dev/null`,
+            `scrot "${tmpPath}" 2>/dev/null`,
+            `import -window root "${tmpPath}" 2>/dev/null`
+          ]
+          for (const cmd of cmds) {
+            try {
+              execSync(cmd, { timeout: 5000 })
+              const fs = await import('fs')
+              if (fs.existsSync(tmpPath)) {
+                const buf = fs.readFileSync(tmpPath)
+                if (buf.length > 100) {
+                  dataUrl = `data:image/png;base64,${buf.toString('base64')}`
+                  fs.unlinkSync(tmpPath)
+                  break
+                }
+              }
+            } catch { continue }
+          }
+        } catch (linuxErr) {
+          console.error('Linux screenshot fallback failed:', linuxErr)
+        }
+      }
+
+      // Restore Clippy window
+      if (wasVisible) clippyWindow.show()
+
+      return dataUrl
     } catch (err) {
       console.error('Screenshot capture failed:', err)
+      clippyWindow.show() // Make sure window comes back
       return null
     }
   })
@@ -42,6 +95,31 @@ export function setupIPC(
   ipcMain.on('chat:sendWithImage', (_event, text: string, imageDataUrl: string) => {
     currentConvoMessages.push({ role: 'user', content: text })
     chatClient.sendWithImage(text, imageDataUrl)
+  })
+
+  // Dropped file handling
+  ipcMain.on('chat:sendDroppedFile', async (_event, filePath: string, isImage: boolean) => {
+    const fs = await import('fs')
+    if (!fs.existsSync(filePath)) return
+
+    if (isImage) {
+      try {
+        const buf = fs.readFileSync(filePath)
+        const ext = filePath.split('.').pop()?.toLowerCase() || 'png'
+        const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`
+        const dataUrl = `data:${mime};base64,${buf.toString('base64')}`
+        const fileName = filePath.split(/[/\\]/).pop() || 'image'
+
+        currentConvoMessages.push({ role: 'user', content: `[Dropped image: ${fileName}]` })
+        chatClient.sendWithImage(`I dropped this image file: ${fileName}. What do you see?`, dataUrl)
+      } catch (err) {
+        console.error('Failed to read dropped image:', err)
+      }
+    } else {
+      const text = `Please look at this file: ${filePath}`
+      currentConvoMessages.push({ role: 'user', content: text })
+      chatClient.send(text)
+    }
   })
 
   // Window dragging

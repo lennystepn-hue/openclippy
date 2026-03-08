@@ -44,6 +44,9 @@ declare global {
       newChat: () => void
       onChatCleared: (callback: () => void) => void
 
+      // Drag & drop
+      sendDroppedFile: (filePath: string, isImage: boolean) => void
+
       // Window drag
       startDrag: () => void
       dragMove: (dx: number, dy: number) => void

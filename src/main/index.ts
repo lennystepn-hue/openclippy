@@ -68,16 +68,17 @@ app.whenReady().then(async () => {
     console.log('[OpenClaw]', msg.trim())
   })
 
+  // 4. Create HTTP chat client (talks to OpenClaw agent)
+  chatClient = new ClippyChatClient(gateway?.getPort() ?? 19789)
+
   try {
     await gateway.start()
     console.log('OpenClaw Gateway started on port', gateway.getPort())
+    chatClient.setGatewayReady(true)
   } catch (err) {
     console.error('OpenClaw Gateway failed to start:', err)
-    // App still works, just without AI backend
+    // App still works, just without AI backend — client shows friendly error
   }
-
-  // 4. Create HTTP chat client (talks to OpenClaw agent)
-  chatClient = new ClippyChatClient(gateway?.getPort() ?? 19789)
 
   // 5. Create Clippy window
   clippyWindow = createClippyWindow()

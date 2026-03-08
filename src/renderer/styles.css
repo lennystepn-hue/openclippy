@@ -90,6 +90,14 @@ html, body {
 
 .clippy-bubble.hidden { display: none; }
 
+/* Drag & drop */
+.clippy-bubble.drag-over {
+  border-color: #4a90d9;
+  border-style: dashed;
+  border-width: 2px;
+  background: #f0f7ff;
+}
+
 /* Chat Input */
 .bubble-input {
   width: 100%;
