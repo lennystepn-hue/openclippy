@@ -1,10 +1,10 @@
 import { shell } from 'electron'
+import crypto from 'crypto'
 import http from 'http'
 import { URL } from 'url'
 import fs from 'fs'
 import path from 'path'
 import { app } from 'electron'
-import { EventEmitter } from 'events'
 
 const CLAUDE_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e'
 const CLAUDE_AUTH_URL = 'https://claude.ai/oauth/authorize'
@@ -18,12 +18,28 @@ export interface TokenData {
 }
 
 /**
- * Start the Claude OAuth browser flow.
+ * Generate PKCE code verifier and challenge
+ */
+function generatePKCE(): { codeVerifier: string; codeChallenge: string } {
+  // Random 32 bytes -> base64url = 43 chars
+  const codeVerifier = crypto.randomBytes(32)
+    .toString('base64url')
+
+  // SHA256 hash of verifier -> base64url
+  const codeChallenge = crypto.createHash('sha256')
+    .update(codeVerifier)
+    .digest('base64url')
+
+  return { codeVerifier, codeChallenge }
+}
+
+/**
+ * Start the Claude OAuth browser flow with PKCE.
  * Opens the browser, waits for callback, exchanges code for tokens.
- * Returns the token data.
  */
 export async function startClaudeOAuthFlow(): Promise<TokenData> {
   const redirectUri = `http://localhost:${CALLBACK_PORT}/callback`
+  const { codeVerifier, codeChallenge } = generatePKCE()
 
   return new Promise((resolve, reject) => {
     const server = http.createServer(async (req, res) => {
@@ -42,18 +58,18 @@ export async function startClaudeOAuthFlow(): Promise<TokenData> {
           server.close()
 
           try {
-            // Exchange auth code for tokens
-            const tokens = await exchangeCodeForTokens(code, redirectUri)
+            const tokens = await exchangeCodeForTokens(code, redirectUri, codeVerifier)
             resolve(tokens)
           } catch (err) {
             reject(err)
           }
         } else {
           const error = url.searchParams.get('error') || 'Unknown error'
+          const desc = url.searchParams.get('error_description') || ''
           res.writeHead(400, { 'Content-Type': 'text/html' })
-          res.end(`<html><body><h2>Authorization failed: ${error}</h2></body></html>`)
+          res.end(`<html><body><h2>Authorization failed: ${error}</h2><p>${desc}</p></body></html>`)
           server.close()
-          reject(new Error(`OAuth failed: ${error}`))
+          reject(new Error(`OAuth failed: ${error} ${desc}`))
         }
       }
     })
@@ -64,7 +80,9 @@ export async function startClaudeOAuthFlow(): Promise<TokenData> {
         redirect_uri: redirectUri,
         response_type: 'code',
         scope: 'openid profile email offline_access',
-        state: Math.random().toString(36).substring(7)
+        state: crypto.randomBytes(16).toString('hex'),
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256'
       })
 
       const authUrl = `${CLAUDE_AUTH_URL}?${params.toString()}`
@@ -80,9 +98,13 @@ export async function startClaudeOAuthFlow(): Promise<TokenData> {
 }
 
 /**
- * Exchange authorization code for access + refresh tokens
+ * Exchange authorization code for access + refresh tokens (with PKCE verifier)
  */
-async function exchangeCodeForTokens(code: string, redirectUri: string): Promise<TokenData> {
+async function exchangeCodeForTokens(
+  code: string,
+  redirectUri: string,
+  codeVerifier: string
+): Promise<TokenData> {
   const response = await fetch(CLAUDE_TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -90,12 +112,14 @@ async function exchangeCodeForTokens(code: string, redirectUri: string): Promise
       grant_type: 'authorization_code',
       client_id: CLAUDE_CLIENT_ID,
       code,
-      redirect_uri: redirectUri
+      redirect_uri: redirectUri,
+      code_verifier: codeVerifier
     }).toString()
   })
 
   if (!response.ok) {
-    throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`)
+    const text = await response.text()
+    throw new Error(`Token exchange failed: ${response.status} ${text}`)
   }
 
   const data = await response.json() as any
@@ -178,7 +202,6 @@ export async function getValidToken(filePath: string): Promise<string | null> {
  * Setup API key auth for non-OAuth providers
  */
 export async function setupApiKey(provider: string, apiKey: string): Promise<boolean> {
-  // Store via OpenClaw CLI
   const { exec } = await import('child_process')
   return new Promise((resolve) => {
     exec(`npx openclaw models auth set-key --provider ${provider} --key "${apiKey}"`, {

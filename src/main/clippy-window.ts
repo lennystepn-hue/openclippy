@@ -3,8 +3,8 @@ import path from 'path'
 
 export function getClippyWindowConfig(): BrowserWindowConstructorOptions {
   return {
-    width: 200,
-    height: 250,
+    width: 400,
+    height: 600,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -25,7 +25,7 @@ export function createClippyWindow(): BrowserWindow {
 
   // Position bottom-right
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize
-  win.setPosition(screenW - 220, screenH - 270)
+  win.setPosition(screenW - 420, screenH - 620)
 
   // Make draggable via CSS (-webkit-app-region: drag)
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })

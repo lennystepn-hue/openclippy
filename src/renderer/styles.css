@@ -18,27 +18,42 @@ html, body {
   justify-content: flex-end;
 }
 
+/* Clippy Sprite */
 .clippy-sprite {
   width: 124px;
   height: 93px;
   background-image: url('../assets/sprites/clippy-map.png');
   background-repeat: no-repeat;
+  background-position: 0 0; /* idle frame */
   image-rendering: pixelated;
   cursor: grab;
   -webkit-app-region: drag;
+  flex-shrink: 0;
 }
 
+/* Animation states — background-position from sprite-data.json */
+.clippy-idle { background-position: 0 0; }
+.clippy-thinking { background-position: -124px -93px; }
+.clippy-talking { background-position: -248px 0; }
+.clippy-excited { background-position: 0 0; }
+.clippy-angry { background-position: -124px 0; }
+.clippy-sad { background-position: -248px -93px; }
+.clippy-laughing { background-position: -372px 0; }
+.clippy-sleeping { background-position: -496px 0; }
+.clippy-waving { background-position: -1612px -2790px; }
+.clippy-listening { background-position: -124px -186px; }
+
+/* Speech Bubble */
 .clippy-bubble {
-  position: absolute;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  margin-bottom: 8px;
   background: #ffffcc;
   border: 2px solid #000;
   border-radius: 8px;
   padding: 12px;
-  min-width: 200px;
-  max-width: 350px;
+  width: 370px;
+  max-height: 480px;
+  overflow-y: auto;
   font-family: 'MS Sans Serif', Tahoma, sans-serif;
   font-size: 13px;
   box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
@@ -60,6 +75,7 @@ html, body {
 
 .clippy-bubble.hidden { display: none; }
 
+/* Chat Input */
 .bubble-input {
   width: 100%;
   padding: 6px 8px;
@@ -93,3 +109,127 @@ html, body {
 }
 
 .bubble-input-area.hidden { display: none; }
+
+/* Setup Wizard */
+.wizard-step {
+  -webkit-app-region: no-drag;
+}
+
+.wizard-progress {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.wizard-title {
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.wizard-clippy-says {
+  font-style: italic;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.wizard-field {
+  margin-bottom: 10px;
+}
+
+.wizard-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.wizard-field select,
+.wizard-field input[type="text"],
+.wizard-field input[type="password"] {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #999;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 12px;
+  -webkit-app-region: no-drag;
+}
+
+.wizard-oauth-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: #4a90d9;
+  color: white;
+  border: 1px solid #357abd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  -webkit-app-region: no-drag;
+}
+
+.wizard-oauth-btn:hover {
+  background: #357abd;
+}
+
+.wizard-oauth-btn.oauth-connected {
+  background: #4caf50;
+  border-color: #388e3c;
+}
+
+.wizard-oauth-btn.oauth-pending {
+  background: #ff9800;
+  border-color: #f57c00;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  gap: 8px;
+}
+
+.wizard-btn {
+  padding: 6px 16px;
+  background: #e0e0e0;
+  border: 1px solid #999;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  -webkit-app-region: no-drag;
+}
+
+.wizard-btn:hover {
+  background: #d0d0d0;
+}
+
+.wizard-finish {
+  background: #4caf50;
+  color: white;
+  border-color: #388e3c;
+}
+
+.wizard-finish:hover {
+  background: #388e3c;
+}
+
+.wizard-error {
+  color: #d32f2f;
+  font-weight: bold;
+}
+
+.wizard-complete {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.wizard-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: normal;
+  cursor: pointer;
+}
