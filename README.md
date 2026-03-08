@@ -35,7 +35,7 @@ Powered by [OpenClaw](https://github.com/openclaw/openclaw) — the open-source 
 
 Because in 1997, Microsoft created the most annoying software assistant in history. People hated it. Microsoft killed it. The internet turned it into a meme.
 
-Now imagine that same paperclip — but powered by Claude, GPT-4, or a local LLM. Imagine it can actually read your screen, understand your code, automate your workflows, and talk back to you.
+Now imagine that same paperclip — but powered by Claude, ChatGPT, or a local LLM. Imagine it can actually read your screen, understand your code, automate your workflows, and talk back to you.
 
 That's OpenClippy.
 
@@ -88,7 +88,7 @@ That's OpenClippy.
 | **Read Your Screen** | Vision AI reads your screen on demand. *"I see 47 ESLint errors. Impressive."* |
 | **Automate Workflows** | Clippy detects repeating patterns and offers to automate them. Morning routine? CI pipeline? He's got it. |
 | **Browse & Research** | Need docs? An API reference? Stack Overflow answer? Clippy fetches it and summarizes. |
-| **Multi-Model** | Switch between Claude, GPT-4, DeepSeek, or local LLMs (Ollama) anytime. Same Clippy, different brain. |
+| **Multi-Model** | Switch between Claude, ChatGPT, DeepSeek, or local LLMs (Ollama) anytime. Same Clippy, different brain. |
 
 ### What Can Go Wrong?
 
@@ -240,8 +240,8 @@ npm run build  # Production build
 │  ┌─────────────────────────────────────┐ │
 │  │    OpenClaw Gateway (System CLI)    │ │
 │  │     ┌─────┐ ┌──────┐ ┌──────────┐  │ │
-│  │     │Claude│ │ GPT  │ │  Ollama  │  │ │
-│  │     │ Pro  │ │  4o  │ │ (Local)  │  │ │
+│  │     │Claude│ │Chat- │ │  Ollama  │  │ │
+│  │     │ Pro  │ │ GPT  │ │ (Local)  │  │ │
 │  │     └─────┘ └──────┘ └──────────┘  │ │
 │  │     50+ Integrations | Memory      │ │
 │  │     Skills | Tools | Automation    │ │
