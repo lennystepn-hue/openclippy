@@ -2,19 +2,19 @@ import { describe, it, expect } from 'vitest'
 import { WizardFlow, WIZARD_STEPS } from '../wizard-steps'
 
 describe('WizardFlow', () => {
-  it('starts at step 0 (AI Model)', () => {
+  it('starts at step 0 (OpenClaw)', () => {
     const flow = new WizardFlow()
     expect(flow.currentStep()).toBe(0)
-    expect(flow.currentStepName()).toBe('ai-model')
+    expect(flow.currentStepName()).toBe('openclaw')
   })
 
-  it('has 7 steps total', () => {
-    expect(WIZARD_STEPS).toHaveLength(7)
+  it('has 8 steps total', () => {
+    expect(WIZARD_STEPS).toHaveLength(8)
   })
 
   it('advances through all steps', () => {
     const flow = new WizardFlow()
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       expect(flow.hasNext()).toBe(true)
       flow.next()
     }
@@ -31,7 +31,7 @@ describe('WizardFlow', () => {
 
   it('reports completion on last step', () => {
     const flow = new WizardFlow()
-    for (let i = 0; i < 6; i++) flow.next()
+    for (let i = 0; i < 7; i++) flow.next()
     expect(flow.isComplete()).toBe(true)
   })
 })

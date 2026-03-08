@@ -1,4 +1,5 @@
 import { ipcMain, BrowserWindow, app, shell, desktopCapturer } from 'electron'
+import { execSync } from 'child_process'
 import path from 'path'
 import { ClippyChatClient } from './openclaw/http-client'
 import { PersonalityManager } from './personality'
@@ -334,6 +335,30 @@ export function setupIPC(
   ipcMain.on('shell:openExternal', (_event, url: string) => {
     if (typeof url === 'string' && /^https?:\/\//.test(url)) {
       shell.openExternal(url)
+    }
+  })
+
+  // OpenClaw check — verify openclaw is installed
+  ipcMain.handle('openclaw:check', () => {
+    const isWindows = process.platform === 'win32'
+    try {
+      const bin = execSync(isWindows ? 'where openclaw' : 'which openclaw', {
+        encoding: 'utf-8',
+        timeout: 3000
+      }).trim().split('\n')[0]
+      if (!bin) return { installed: false }
+
+      try {
+        const version = execSync(`"${bin}" --version`, {
+          encoding: 'utf-8',
+          timeout: 5000
+        }).trim()
+        return { installed: true, version }
+      } catch {
+        return { installed: true, version: 'unknown' }
+      }
+    } catch {
+      return { installed: false, error: 'openclaw not found in PATH' }
     }
   })
 

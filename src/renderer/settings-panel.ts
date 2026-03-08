@@ -86,6 +86,7 @@ const SECTIONS: SettingsSection[] = [
     title: 'General',
     icon: '⚙',
     fields: [
+      { key: 'openclaw-status', label: 'OpenClaw Engine', type: 'info' },
       { key: 'hotkey', label: 'Global Hotkey', type: 'hotkey' },
       { key: 'autostart', label: 'Start with system', type: 'toggle' }
     ]
@@ -147,6 +148,7 @@ export class SettingsPanel {
 
     this.clippy.speak(html)
     this.bindEvents()
+    this.checkOpenClaw()
   }
 
   private renderField(field: SettingsField): string {
@@ -196,6 +198,16 @@ export class SettingsPanel {
               ${authed ? 'Claude Connected ✓' : field.label}
             </button>
           </div>`
+      }
+      case 'info': {
+        if (field.key === 'openclaw-status') {
+          return `
+            <div class="settings-field">
+              <label>${field.label}</label>
+              <div id="settings-openclaw-status" style="font-size: 12px; color: #888;">Checking...</div>
+            </div>`
+        }
+        return ''
       }
       default:
         return ''
@@ -283,6 +295,17 @@ export class SettingsPanel {
         if (el.value) this.currentData[key] = el.value
       }
     })
+  }
+
+  private async checkOpenClaw(): Promise<void> {
+    const el = document.querySelector('#settings-openclaw-status')
+    if (!el) return
+    const result = await window.clippy.checkOpenClaw()
+    if (result.installed) {
+      el.innerHTML = `<span style="color: #2e7d32; font-weight: bold;">Installed ${result.version ? `(${result.version})` : ''}</span>`
+    } else {
+      el.innerHTML = `<span style="color: #d32f2f; font-weight: bold;">Not found</span> — run: <code>npm install -g openclaw</code>`
+    }
   }
 
   private showSavedFeedback(): void {

@@ -47,6 +47,9 @@ declare global {
       // Drag & drop
       sendDroppedFile: (filePath: string, isImage: boolean) => void
 
+      // OpenClaw
+      checkOpenClaw: () => Promise<{ installed: boolean; version?: string; error?: string }>
+
       // Window drag
       startDrag: () => void
       dragMove: (dx: number, dy: number) => void

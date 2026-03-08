@@ -20,7 +20,7 @@ export class SetupWizard {
   private renderCurrentStep(): void {
     const stepDef = this.flow.currentStepDef()
     const stepNum = this.flow.currentStep() + 1
-    const totalSteps = 7
+    const totalSteps = 8
 
     const fieldsHtml = stepDef.fields.map(field => this.renderField(field)).join('')
 
@@ -62,6 +62,8 @@ export class SetupWizard {
         return this.renderToggle(field)
       case 'hotkey':
         return this.renderHotkeyInput(field)
+      case 'openclaw-check':
+        return this.renderOpenClawCheck()
       default:
         return ''
     }
@@ -117,6 +119,28 @@ export class SetupWizard {
     `
   }
 
+  private renderOpenClawCheck(): string {
+    const status = this.formData['openclaw-installed']
+    if (status === true) {
+      const version = this.formData['openclaw-version'] || ''
+      return `
+        <div class="wizard-field">
+          <div class="wizard-complete">OpenClaw ist installiert ${version ? `(${version})` : ''}</div>
+        </div>`
+    }
+
+    return `
+      <div class="wizard-field">
+        <div id="openclaw-status">Checking...</div>
+        <div style="margin-top: 10px; font-size: 12px; color: #555;">
+          <strong>OpenClaw muss global installiert sein:</strong>
+          <pre style="margin: 6px 0; padding: 8px; background: #1e1e1e; color: #d4d4d4; border-radius: 4px; font-size: 11px;">npm install -g openclaw</pre>
+          <div style="margin-top: 4px;">Braucht <strong>Node.js 22.12+</strong> — download: <span class="chat-link" data-url="https://nodejs.org">nodejs.org</span></div>
+        </div>
+        <button class="wizard-oauth-btn" id="openclaw-recheck" style="margin-top: 10px;">Nochmal checken</button>
+      </div>`
+  }
+
   private renderHotkeyInput(field: WizardField): string {
     const value = (this.formData[field.name] as string) ?? 'Ctrl+Shift+C'
     return `
@@ -128,10 +152,15 @@ export class SetupWizard {
   }
 
   private bindEvents(): void {
-    // Next button
+    // Next button — block on openclaw step if not installed
     const nextBtn = this.container.querySelector('.wizard-next')
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
+        if (this.flow.currentStepName() === 'openclaw' && !this.formData['openclaw-installed']) {
+          const statusEl = this.container.querySelector('#openclaw-status')
+          if (statusEl) statusEl.innerHTML = '<span class="wizard-error">Bitte erst OpenClaw installieren!</span>'
+          return
+        }
         this.collectCurrentFields()
         this.flow.next()
         this.renderCurrentStep()
@@ -177,8 +206,26 @@ export class SetupWizard {
       })
     })
 
+    // OpenClaw check — auto-run on step render
+    const statusEl = this.container.querySelector('#openclaw-status')
+    if (statusEl) {
+      this.runOpenClawCheck()
+    }
+    const recheckBtn = this.container.querySelector('#openclaw-recheck')
+    if (recheckBtn) {
+      recheckBtn.addEventListener('click', () => this.runOpenClawCheck())
+    }
+
+    // Clickable links in wizard
+    this.container.querySelectorAll('.chat-link[data-url]').forEach(link => {
+      link.addEventListener('click', () => {
+        const url = (link as HTMLElement).dataset.url
+        if (url) window.clippy.openExternal(url)
+      })
+    })
+
     // OAuth buttons — mark as connected on click
-    const oauthBtns = this.container.querySelectorAll('.wizard-oauth-btn')
+    const oauthBtns = this.container.querySelectorAll('.wizard-oauth-btn:not(#openclaw-recheck)')
     oauthBtns.forEach(btn => {
       btn.addEventListener('click', async () => {
         const fieldName = (btn as HTMLElement).dataset.field!
@@ -206,6 +253,27 @@ export class SetupWizard {
         btn.textContent = `${btn.textContent?.replace(' ✓', '')} ✓`
       })
     })
+  }
+
+  private async runOpenClawCheck(): Promise<void> {
+    const statusEl = this.container.querySelector('#openclaw-status')
+    const recheckBtn = this.container.querySelector('#openclaw-recheck')
+    if (statusEl) statusEl.innerHTML = '<em>Checking...</em>'
+    if (recheckBtn) (recheckBtn as HTMLButtonElement).disabled = true
+
+    const result = await window.clippy.checkOpenClaw()
+
+    if (result.installed) {
+      this.formData['openclaw-installed'] = true
+      this.formData['openclaw-version'] = result.version || ''
+      // Re-render to show success state
+      this.renderCurrentStep()
+    } else {
+      if (statusEl) {
+        statusEl.innerHTML = '<span class="wizard-error">OpenClaw nicht gefunden!</span>'
+      }
+      if (recheckBtn) (recheckBtn as HTMLButtonElement).disabled = false
+    }
   }
 
   private collectCurrentFields(): void {

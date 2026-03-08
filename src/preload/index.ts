@@ -57,6 +57,9 @@ contextBridge.exposeInMainWorld('clippy', {
   sendDroppedFile: (filePath: string, isImage: boolean) =>
     ipcRenderer.send('chat:sendDroppedFile', filePath, isImage),
 
+  // OpenClaw
+  checkOpenClaw: () => ipcRenderer.invoke('openclaw:check'),
+
   // Window drag
   startDrag: () => ipcRenderer.send('window:startDrag'),
   dragMove: (dx: number, dy: number) => ipcRenderer.send('window:dragMove', dx, dy)

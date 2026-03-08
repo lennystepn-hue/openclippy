@@ -6,7 +6,7 @@ export interface WizardStepDef {
 }
 
 export interface WizardField {
-  type: 'select' | 'text' | 'password' | 'oauth-button' | 'toggle' | 'hotkey'
+  type: 'select' | 'text' | 'password' | 'oauth-button' | 'toggle' | 'hotkey' | 'openclaw-check'
   name: string
   label: string
   options?: { value: string; label: string }[]
@@ -15,6 +15,14 @@ export interface WizardField {
 }
 
 export const WIZARD_STEPS: WizardStepDef[] = [
+  {
+    name: 'openclaw',
+    title: 'OpenClaw Engine',
+    clippySays: 'Erstmal checken ob mein Gehirn installiert ist...',
+    fields: [
+      { type: 'openclaw-check', name: 'openclaw-status', label: 'OpenClaw Status' }
+    ]
+  },
   {
     name: 'ai-model',
     title: 'AI Model',
