@@ -16,14 +16,29 @@ function findOpenClawBin(): BinResult | null {
   const ext = isWindows ? '.cmd' : ''
   const candidates: BinResult[] = []
 
-  // 1. Packaged app: prefer running the .mjs entry directly with Electron's node
+  // 1. Packaged app: find node binary and run openclaw.mjs directly
   //    This avoids .cmd shim issues on Windows where node.exe may not be on PATH
+  //    IMPORTANT: Do NOT use process.execPath — that's the Electron binary itself
+  //    and would cause a fork bomb (each instance spawns another Electron app)
   if (app.isPackaged) {
     const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules')
     const mjsEntry = path.join(unpackedDir, 'openclaw', 'openclaw.mjs')
+
     if (fs.existsSync(mjsEntry)) {
-      candidates.push({ bin: process.execPath, script: mjsEntry })
+      // Find a real node binary — NOT process.execPath (that's Electron!)
+      let nodeBin: string | null = null
+      try {
+        nodeBin = execSync(isWindows ? 'where node' : 'which node', {
+          encoding: 'utf-8',
+          timeout: 3000
+        }).trim().split('\n')[0]
+      } catch { /* node not on PATH */ }
+
+      if (nodeBin) {
+        candidates.push({ bin: nodeBin, script: mjsEntry })
+      }
     }
+
     // Fallback to .bin shim
     candidates.push({
       bin: path.join(unpackedDir, '.bin', `openclaw${ext}`)
@@ -88,6 +103,14 @@ export class OpenClawGateway extends EventEmitter {
         const err = new Error(
           'OpenClaw binary not found. Please install it globally: npm install -g openclaw'
         )
+        this.emit('log', err.message)
+        reject(err)
+        return
+      }
+
+      // Safety: NEVER spawn ourselves (Electron binary) — that causes a fork bomb
+      if (result.bin === process.execPath && !result.script) {
+        const err = new Error('SAFETY: Refusing to spawn Electron binary as OpenClaw gateway')
         this.emit('log', err.message)
         reject(err)
         return
@@ -176,7 +199,14 @@ export class OpenClawGateway extends EventEmitter {
   }
 
   stop(): void {
-    this.process?.kill('SIGTERM')
+    if (this.process) {
+      this.process.kill('SIGTERM')
+      // Force kill after 3s if SIGTERM didn't work (especially on Windows)
+      const proc = this.process
+      setTimeout(() => {
+        try { proc.kill('SIGKILL') } catch { /* already dead */ }
+      }, 3000)
+    }
     this.process = null
     this.ready = false
   }
