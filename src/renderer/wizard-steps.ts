@@ -18,18 +18,20 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'ai-model',
     title: 'AI Model',
-    clippySays: 'Hey! Ich bin Clippy. Lange nicht gesehen... Welches Gehirn soll ich benutzen?',
+    clippySays: 'Hey! Ich bin Clippy. Lange nicht gesehen... Welches Gehirn soll ich benutzen? Claude Pro/Max empfohlen!',
     fields: [
       {
         type: 'select', name: 'provider', label: 'Provider',
         options: [
-          { value: 'openai-oauth', label: 'ChatGPT (Login with subscription)' },
-          { value: 'anthropic', label: 'Claude (API Key)' },
+          { value: 'claude-oauth', label: 'Claude Pro/Max (OAuth — recommended)' },
+          { value: 'openai-oauth', label: 'ChatGPT (OAuth Login)' },
+          { value: 'anthropic-api', label: 'Claude (API Key)' },
           { value: 'deepseek', label: 'DeepSeek (API Key)' },
           { value: 'ollama', label: 'Ollama (Local, free)' },
           { value: 'custom', label: 'Custom OpenAI-compatible' }
         ]
       },
+      { type: 'password', name: 'setupToken', label: 'Claude Setup Token (run "claude setup-token" in terminal)', placeholder: 'Paste token here...', optional: true },
       { type: 'password', name: 'apiKey', label: 'API Key', placeholder: 'sk-...', optional: true }
     ]
   },

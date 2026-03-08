@@ -70,6 +70,22 @@ export function setupIPC(
     clippyWindow.webContents.send('setup:done')
   })
 
+  // Auth setup handlers
+  ipcMain.handle('auth:setupClaude', async (_event, setupToken: string) => {
+    const { setupClaudeOAuth } = await import('./openclaw/auth')
+    return setupClaudeOAuth(setupToken)
+  })
+
+  ipcMain.handle('auth:setupApiKey', async (_event, provider: string, apiKey: string) => {
+    const { setupApiKey } = await import('./openclaw/auth')
+    return setupApiKey(provider, apiKey)
+  })
+
+  ipcMain.handle('auth:status', async () => {
+    const { checkAuthStatus } = await import('./openclaw/auth')
+    return checkAuthStatus()
+  })
+
   // Check if first run
   ipcMain.handle('setup:isFirstRun', () => {
     return settings.isFirstRun()

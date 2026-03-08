@@ -6,6 +6,9 @@ declare global {
     clippy: {
       sendMessage: (data: string) => void
       completeSetup: (data: Record<string, unknown>) => void
+      setupClaudeOAuth: (token: string) => Promise<boolean>
+      setupApiKey: (provider: string, key: string) => Promise<boolean>
+      checkAuthStatus: () => Promise<string>
     }
   }
 }
@@ -217,7 +220,26 @@ export class SetupWizard {
     }
   }
 
-  private finish(): void {
+  private async finish(): Promise<void> {
+    // Handle Claude OAuth setup-token flow
+    if (this.formData.provider === 'claude-oauth' && this.formData.setupToken) {
+      const success = await window.clippy.setupClaudeOAuth(this.formData.setupToken as string)
+      if (!success) {
+        this.clippy.speak(
+          '<div class="wizard-error">Claude OAuth setup failed. Check your token and try again.</div>'
+        )
+        return
+      }
+    }
+
+    // Handle API key setup for providers that need it
+    if (this.formData.apiKey && this.formData.provider) {
+      const provider = this.formData.provider as string
+      if (['anthropic-api', 'deepseek', 'custom'].includes(provider)) {
+        await window.clippy.setupApiKey(provider, this.formData.apiKey as string)
+      }
+    }
+
     window.clippy.completeSetup(this.formData)
 
     this.clippy.speak(

@@ -19,5 +19,8 @@ contextBridge.exposeInMainWorld('clippy', {
   toggleChat: () => ipcRenderer.send('clippy:toggleChat'),
   dismiss: () => ipcRenderer.send('clippy:dismiss'),
   isFirstRun: () => ipcRenderer.invoke('setup:isFirstRun'),
-  completeSetup: (data: any) => ipcRenderer.send('setup:complete', data)
+  completeSetup: (data: any) => ipcRenderer.send('setup:complete', data),
+  setupClaudeOAuth: (token: string) => ipcRenderer.invoke('auth:setupClaude', token),
+  setupApiKey: (provider: string, key: string) => ipcRenderer.invoke('auth:setupApiKey', provider, key),
+  checkAuthStatus: () => ipcRenderer.invoke('auth:status')
 })
