@@ -18,7 +18,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'ai-model',
     title: 'AI Model',
-    clippySays: 'Hey! Ich bin Clippy. Lange nicht gesehen... Welches Gehirn soll ich benutzen? Claude Pro/Max empfohlen!',
+    clippySays: 'Hey! Ich bin Clippy. Lange nicht gesehen... Klick einfach auf Login with Claude und ich bin connected!',
     fields: [
       {
         type: 'select', name: 'provider', label: 'Provider',
@@ -31,7 +31,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
           { value: 'custom', label: 'Custom OpenAI-compatible' }
         ]
       },
-      { type: 'password', name: 'setupToken', label: 'Claude Setup Token (run "claude setup-token" in terminal)', placeholder: 'Paste token here...', optional: true },
+      { type: 'oauth-button', name: 'claude-login', label: 'Login with Claude' },
       { type: 'password', name: 'apiKey', label: 'API Key', placeholder: 'sk-...', optional: true }
     ]
   },

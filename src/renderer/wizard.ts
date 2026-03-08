@@ -6,7 +6,7 @@ declare global {
     clippy: {
       sendMessage: (data: string) => void
       completeSetup: (data: Record<string, unknown>) => void
-      setupClaudeOAuth: (token: string) => Promise<boolean>
+      startClaudeLogin: () => Promise<{ success: boolean; error?: string }>
       setupApiKey: (provider: string, key: string) => Promise<boolean>
       checkAuthStatus: () => Promise<string>
     }
@@ -192,8 +192,27 @@ export class SetupWizard {
     // OAuth buttons — mark as connected on click
     const oauthBtns = this.container.querySelectorAll('.wizard-oauth-btn')
     oauthBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const fieldName = (btn as HTMLElement).dataset.field!
+
+        if (fieldName === 'claude-login') {
+          btn.textContent = 'Logging in...'
+          btn.classList.add('oauth-pending')
+          const result = await window.clippy.startClaudeLogin()
+          btn.classList.remove('oauth-pending')
+          if (result.success) {
+            this.formData[fieldName] = true
+            btn.classList.add('oauth-connected')
+            btn.textContent = 'Login with Claude ✓'
+          } else {
+            btn.textContent = 'Login with Claude'
+            this.clippy.speak(
+              `<div class="wizard-error">Claude login failed: ${result.error || 'Unknown error'}. Try again.</div>`
+            )
+          }
+          return
+        }
+
         this.formData[fieldName] = true
         btn.classList.add('oauth-connected')
         btn.textContent = `${btn.textContent?.replace(' ✓', '')} ✓`
@@ -221,15 +240,12 @@ export class SetupWizard {
   }
 
   private async finish(): Promise<void> {
-    // Handle Claude OAuth setup-token flow
-    if (this.formData.provider === 'claude-oauth' && this.formData.setupToken) {
-      const success = await window.clippy.setupClaudeOAuth(this.formData.setupToken as string)
-      if (!success) {
-        this.clippy.speak(
-          '<div class="wizard-error">Claude OAuth setup failed. Check your token and try again.</div>'
-        )
-        return
-      }
+    // Claude OAuth — login already happened via the button click, just complete
+    if (this.formData.provider === 'claude-oauth' && !this.formData['claude-login']) {
+      this.clippy.speak(
+        '<div class="wizard-error">Bitte erst auf "Login with Claude" klicken!</div>'
+      )
+      return
     }
 
     // Handle API key setup for providers that need it

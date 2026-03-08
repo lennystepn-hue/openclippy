@@ -14,7 +14,7 @@ declare global {
       dismiss: () => void
       isFirstRun: () => Promise<boolean>
       completeSetup: (data: Record<string, unknown>) => void
-      setupClaudeOAuth: (token: string) => Promise<boolean>
+      startClaudeLogin: () => Promise<{ success: boolean; error?: string }>
       setupApiKey: (provider: string, key: string) => Promise<boolean>
       checkAuthStatus: () => Promise<string>
     }

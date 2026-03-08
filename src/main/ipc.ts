@@ -1,4 +1,5 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, app } from 'electron'
+import path from 'path'
 import { ClippyChatClient } from './openclaw/http-client'
 import { PersonalityManager } from './personality'
 import { Settings } from './settings'
@@ -71,9 +72,16 @@ export function setupIPC(
   })
 
   // Auth setup handlers
-  ipcMain.handle('auth:setupClaude', async (_event, setupToken: string) => {
-    const { setupClaudeOAuth } = await import('./openclaw/auth')
-    return setupClaudeOAuth(setupToken)
+  ipcMain.handle('auth:claudeOAuth', async () => {
+    const { startClaudeOAuthFlow, saveTokens } = await import('./openclaw/auth')
+    const tokenPath = path.join(app.getPath('userData'), 'claude-tokens.json')
+    try {
+      const tokens = await startClaudeOAuthFlow()
+      saveTokens(tokens, tokenPath)
+      return { success: true }
+    } catch (err: any) {
+      return { success: false, error: err.message }
+    }
   })
 
   ipcMain.handle('auth:setupApiKey', async (_event, provider: string, apiKey: string) => {

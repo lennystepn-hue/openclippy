@@ -110,6 +110,23 @@ app.whenReady().then(async () => {
   if (!settings.isFirstRun()) {
     startProactive()
   }
+
+  // Auto-refresh Claude token
+  const tokenPath = path.join(app.getPath('userData'), 'claude-tokens.json')
+  const { getValidToken } = await import('./openclaw/auth')
+
+  setInterval(async () => {
+    const token = await getValidToken(tokenPath)
+    if (token && chatClient) {
+      chatClient.setToken(token)
+    }
+  }, 300000) // Check every 5 minutes
+
+  // Also set initial token
+  const initialToken = await getValidToken(tokenPath)
+  if (initialToken && chatClient) {
+    chatClient.setToken(initialToken)
+  }
 })
 
 app.on('will-quit', () => {
