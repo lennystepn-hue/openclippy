@@ -8,6 +8,8 @@
 
 ### He's back. He's autonomous. He has opinions.
 
+**Created by [Lenny Enderle](https://github.com/lennystepn-hue)**
+
 [![Build](https://img.shields.io/github/actions/workflow/status/lennystepn-hue/openclippy/build.yml?branch=main&style=flat-square&label=build)](https://github.com/lennystepn-hue/openclippy/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Powered by OpenClaw](https://img.shields.io/badge/powered%20by-OpenClaw%20%F0%9F%A6%9E-ff6b35?style=flat-square)](https://github.com/openclaw/openclaw)
@@ -324,6 +326,7 @@ MIT — do whatever you want. Clippy is free. Clippy was always meant to be free
 
 ## Credits & Acknowledgements
 
+- **[Lenny Enderle](https://github.com/lennystepn-hue)** — Creator & lead developer of OpenClippy
 - **[OpenClaw](https://github.com/openclaw/openclaw)** — The incredible open-source AI agent engine that powers everything Clippy can do
 - **[clippyjs](https://github.com/pi0/clippyjs)** — For preserving the original Clippy sprites
 - **[Microsoft](https://github.com/thebeebs/OfficeAssistant)** — For creating Clippit in 1997 and open-sourcing the Office Assistant code
