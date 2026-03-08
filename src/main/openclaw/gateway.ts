@@ -105,9 +105,10 @@ export class OpenClawGateway extends EventEmitter {
       const gatewayArgs = [
         'gateway',
         '--port', String(this.port),
-        '--auth', 'none',              // Local only, no auth needed
         '--bind', 'loopback',          // Only listen on 127.0.0.1
         '--allow-unconfigured'         // Don't require gateway.mode=local in config
+        // NOTE: no --auth flag — respect the global OpenClaw config's auth mode.
+        // The HTTP client reads the token from ~/.openclaw/openclaw.json.
       ]
 
       this.emit('log', `Starting OpenClaw from: ${result.bin}`)

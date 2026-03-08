@@ -4,7 +4,7 @@ import { createClippyWindow } from './clippy-window'
 import { createTray } from './tray'
 import { OpenClawGateway } from './openclaw/gateway'
 import { ClippyChatClient } from './openclaw/http-client'
-import { initializeWorkspace, writeSoulFile, resolveModel } from './openclaw/config'
+import { initializeWorkspace, writeSoulFile, resolveModel, readGatewayToken } from './openclaw/config'
 import { setupIPC } from './ipc'
 import { Settings } from './settings'
 import { PersonalityManager } from './personality'
@@ -71,6 +71,13 @@ app.whenReady().then(async () => {
   // 4. Create HTTP chat client (talks to OpenClaw agent)
   chatClient = new ClippyChatClient(gateway?.getPort() ?? 19789)
   chatClient.setModel(resolveModel(settings.get('provider') ?? undefined))
+
+  // Pass gateway auth token if the global config uses token auth
+  const gwToken = readGatewayToken()
+  if (gwToken) {
+    chatClient.setToken(gwToken)
+    console.log('[auth] Using gateway token from global OpenClaw config')
+  }
 
   try {
     await gateway.start()

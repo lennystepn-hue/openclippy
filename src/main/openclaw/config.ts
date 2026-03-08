@@ -404,6 +404,26 @@ export function ensureGlobalChatCompletions(): void {
 }
 
 /**
+ * Read the gateway auth token from the global OpenClaw config.
+ * Returns the token string if auth.mode is "token", otherwise null.
+ */
+export function readGatewayToken(): string | null {
+  const globalConfigPath = path.join(os.homedir(), '.openclaw', 'openclaw.json')
+  if (!fs.existsSync(globalConfigPath)) return null
+
+  try {
+    const config = JSON.parse(fs.readFileSync(globalConfigPath, 'utf-8'))
+    if (config?.gateway?.auth?.mode === 'token' && config.gateway.auth.token) {
+      return config.gateway.auth.token
+    }
+    if (config?.gateway?.auth?.mode === 'password' && config.gateway.auth.password) {
+      return config.gateway.auth.password
+    }
+  } catch { /* ignore */ }
+  return null
+}
+
+/**
  * Initialize the full OpenClaw workspace (config + soul + agents)
  */
 export function initializeWorkspace(settings: ClippyUserSettings): string {
