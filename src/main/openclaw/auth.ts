@@ -79,7 +79,7 @@ export async function startClaudeOAuthFlow(): Promise<TokenData> {
         client_id: CLAUDE_CLIENT_ID,
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'openid profile email offline_access',
+        scope: 'user:inference',
         state: crypto.randomBytes(16).toString('hex'),
         code_challenge: codeChallenge,
         code_challenge_method: 'S256'
