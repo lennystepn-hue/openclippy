@@ -8,10 +8,11 @@
  *   npx openclippy doctor   # Diagnose issues
  */
 
-import { execSync, spawn } from 'child_process'
-import { existsSync } from 'fs'
-import { platform, homedir, arch } from 'os'
-import { join } from 'path'
+import { execSync, spawn, execFile } from 'child_process'
+import { existsSync, createWriteStream, mkdirSync, chmodSync, renameSync } from 'fs'
+import { platform, homedir, arch, tmpdir } from 'os'
+import { join, basename } from 'path'
+import { get as httpsGet } from 'https'
 import readline from 'readline'
 
 // ─── Colors (no dependencies) ────────────────────────────────────────────────
@@ -341,6 +342,219 @@ async function runOnboard() {
   })
 }
 
+// ─── Download & Install ──────────────────────────────────────────────────────
+
+const GITHUB_REPO = 'lennystepn-hue/openclippy'
+
+function httpsGetJson(url) {
+  return new Promise((resolve, reject) => {
+    httpsGet(url, { headers: { 'User-Agent': 'openclippy-cli' } }, (res) => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        return httpsGetJson(res.headers.location).then(resolve, reject)
+      }
+      let data = ''
+      res.on('data', chunk => data += chunk)
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)) }
+        catch { reject(new Error('Failed to parse JSON')) }
+      })
+    }).on('error', reject)
+  })
+}
+
+function downloadFile(url, dest) {
+  return new Promise((resolve, reject) => {
+    const follow = (url) => {
+      httpsGet(url, { headers: { 'User-Agent': 'openclippy-cli' } }, (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          return follow(res.headers.location)
+        }
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`))
+          return
+        }
+
+        const totalBytes = parseInt(res.headers['content-length'] || '0', 10)
+        let downloaded = 0
+        const file = createWriteStream(dest)
+
+        res.on('data', (chunk) => {
+          downloaded += chunk.length
+          file.write(chunk)
+          if (totalBytes > 0) {
+            const pct = Math.round((downloaded / totalBytes) * 100)
+            const bar = '█'.repeat(Math.round(pct / 4)) + '░'.repeat(25 - Math.round(pct / 4))
+            process.stdout.write(`\r     ${c.dim}[${bar}] ${pct}%${c.reset}`)
+          }
+        })
+
+        res.on('end', () => {
+          file.end()
+          if (totalBytes > 0) process.stdout.write('\n')
+          resolve()
+        })
+
+        res.on('error', (err) => { file.destroy(); reject(err) })
+      }).on('error', reject)
+    }
+    follow(url)
+  })
+}
+
+async function getLatestRelease() {
+  try {
+    return await httpsGetJson(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+  } catch {
+    return null
+  }
+}
+
+function getAssetPattern() {
+  const p = platform()
+  const a = arch()
+
+  if (p === 'win32') {
+    return { pattern: /\.exe$/i, ext: '.exe', name: 'Windows installer' }
+  } else if (p === 'darwin') {
+    const archPart = a === 'arm64' ? 'arm64' : 'x64'
+    return { pattern: new RegExp(`${archPart}.*\\.dmg$`, 'i'), ext: '.dmg', name: 'macOS installer', fallbackPattern: /\.dmg$/i }
+  } else {
+    return { pattern: /\.AppImage$/i, ext: '.AppImage', name: 'Linux AppImage' }
+  }
+}
+
+function findAppAsset(assets) {
+  const { pattern, fallbackPattern } = getAssetPattern()
+  let asset = assets.find(a => pattern.test(a.name))
+  if (!asset && fallbackPattern) {
+    asset = assets.find(a => fallbackPattern.test(a.name))
+  }
+  return asset
+}
+
+async function downloadAndInstall() {
+  step('📥', 'Fetching latest release...')
+  const release = await getLatestRelease()
+  if (!release) {
+    fail('Could not reach GitHub')
+    info(`Download manually: ${c.cyan}https://github.com/${GITHUB_REPO}/releases/latest${c.reset}`)
+    return false
+  }
+  pass(release.tag_name)
+  blank()
+
+  const asset = findAppAsset(release.assets || [])
+  if (!asset) {
+    fail('No installer found for your platform')
+    info(`Download manually: ${c.cyan}https://github.com/${GITHUB_REPO}/releases/tag/${release.tag_name}${c.reset}`)
+    return false
+  }
+
+  const { name: platformName } = getAssetPattern()
+  step('⬇️ ', `Downloading ${platformName} (${asset.name})...`)
+  console.log()
+
+  const downloadDir = join(tmpdir(), 'openclippy-setup')
+  mkdirSync(downloadDir, { recursive: true })
+  const downloadPath = join(downloadDir, asset.name)
+
+  try {
+    await downloadFile(asset.browser_download_url, downloadPath)
+    console.log(`  ${c.green}✓${c.reset}  Downloaded to ${c.dim}${downloadPath}${c.reset}`)
+  } catch (err) {
+    fail(`Download failed: ${err.message}`)
+    return false
+  }
+  blank()
+
+  // Platform-specific install
+  const p = platform()
+
+  if (p === 'win32') {
+    step('🔧', 'Running installer...')
+    console.log()
+    info('The installer window will open. Follow the prompts.')
+    blank()
+
+    return new Promise(resolve => {
+      const proc = spawn(downloadPath, [], { detached: true, stdio: 'ignore' })
+      proc.unref()
+      console.log(`  ${c.green}✓${c.reset}  Installer launched!`)
+      info('OpenClippy will start automatically after installation.')
+      resolve(true)
+    })
+
+  } else if (p === 'darwin') {
+    step('🔧', 'Opening installer...')
+    console.log()
+    try {
+      execSync(`open "${downloadPath}"`, { timeout: 10000 })
+      console.log(`  ${c.green}✓${c.reset}  DMG opened — drag OpenClippy to Applications`)
+      return true
+    } catch {
+      fail('Could not open DMG')
+      info(`Open manually: ${downloadPath}`)
+      return false
+    }
+
+  } else {
+    // Linux AppImage
+    step('🔧', 'Setting up AppImage...')
+    console.log()
+
+    const appDir = join(homedir(), 'Applications')
+    mkdirSync(appDir, { recursive: true })
+    const finalPath = join(appDir, 'OpenClippy.AppImage')
+
+    try {
+      renameSync(downloadPath, finalPath)
+      chmodSync(finalPath, 0o755)
+      console.log(`  ${c.green}✓${c.reset}  Installed to ${c.dim}${finalPath}${c.reset}`)
+      return finalPath
+    } catch {
+      // rename across filesystems doesn't work, copy instead
+      try {
+        execSync(`cp "${downloadPath}" "${finalPath}" && chmod +x "${finalPath}"`)
+        console.log(`  ${c.green}✓${c.reset}  Installed to ${c.dim}${finalPath}${c.reset}`)
+        return finalPath
+      } catch {
+        chmodSync(downloadPath, 0o755)
+        console.log(`  ${c.green}✓${c.reset}  Ready at ${c.dim}${downloadPath}${c.reset}`)
+        return downloadPath
+      }
+    }
+  }
+}
+
+function launchApp(appPath) {
+  const p = platform()
+
+  try {
+    if (p === 'win32') {
+      // Windows — installer handles launch, or find the exe
+      const paths = [
+        join(homedir(), 'AppData', 'Local', 'Programs', 'openclippy', 'OpenClippy.exe'),
+        join(homedir(), 'AppData', 'Local', 'openclippy', 'OpenClippy.exe'),
+      ]
+      const exe = paths.find(p => existsSync(p))
+      if (exe) {
+        spawn(exe, [], { detached: true, stdio: 'ignore' }).unref()
+        return true
+      }
+      return false // installer will handle it
+    } else if (p === 'darwin') {
+      execSync('open -a OpenClippy', { timeout: 5000 })
+      return true
+    } else if (appPath) {
+      spawn(appPath, ['--no-sandbox'], { detached: true, stdio: 'ignore' }).unref()
+      return true
+    }
+  } catch {
+    return false
+  }
+  return false
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function doctor() {
@@ -451,27 +665,57 @@ async function setup() {
   // Step 5: Platform & app
   checkPlatformBinaries()
   blank()
-  const appInstalled = checkDesktopApp()
+  let appInstalled = checkDesktopApp()
   blank()
+
+  // Step 6: Download & install app if needed
+  let appPath = null
+  if (!appInstalled && gatewayOk) {
+    clippy(
+      "Backend is ready but you don't\nhave the app yet. Let me grab\nit from GitHub. One sec..."
+    )
+
+    const answer = await ask('Download and install OpenClippy? (Y/n)')
+    if (answer.toLowerCase() !== 'n') {
+      blank()
+      const result = await downloadAndInstall()
+      blank()
+      if (result) {
+        appInstalled = true
+        if (typeof result === 'string') appPath = result
+      }
+    }
+  }
 
   // Summary
   console.log(`  ${c.bold}${c.white}─── Setup Complete ───${c.reset}\n`)
 
-  if (gatewayOk) {
+  if (gatewayOk && appInstalled) {
     clippy(
-      "We're good! Everything works.\nStart the app and I'll be right\nthere on your desktop. Miss me?"
+      "Everything is ready! Starting\nClippy now. See you on your\ndesktop. Try not to scream."
     )
 
-    if (!appInstalled) {
-      console.log(`  ${c.yellow}Download the app:${c.reset}`)
-      console.log(`  ${c.cyan}https://github.com/lennystepn-hue/openclippy/releases/latest${c.reset}\n`)
+    // Try to launch the app
+    const launched = launchApp(appPath)
+    if (launched) {
+      console.log(`  ${c.green}${c.bold}OpenClippy is starting!${c.reset}`)
+      info("I'll appear on your desktop in a moment.")
+    } else {
+      console.log(`  ${c.green}${c.bold}All set!${c.reset}`)
+      info('Launch OpenClippy from your applications to get started.')
     }
+  } else if (gatewayOk && !appInstalled) {
+    clippy(
+      "Backend works but no app yet.\nDownload it and I'll be right\nthere. I promise I won't judge.\n...much."
+    )
+    console.log(`  ${c.yellow}Download:${c.reset} ${c.cyan}https://github.com/${GITHUB_REPO}/releases/latest${c.reset}`)
   } else {
     clippy(
       "Gateway didn't start. That's not\ngreat. Run me with 'doctor' to\ndig deeper. I love digging."
     )
-    console.log(`  Run: ${c.cyan}npx openclippy doctor${c.reset}\n`)
+    console.log(`  Run: ${c.cyan}npx openclippy doctor${c.reset}`)
   }
+  blank()
 }
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
@@ -479,7 +723,7 @@ async function setup() {
 const command = process.argv[2]
 
 console.log()
-console.log(`  ${c.bold}${c.yellow}📎 OpenClippy${c.reset} ${c.dim}v0.5.0${c.reset}`)
+console.log(`  ${c.bold}${c.yellow}📎 OpenClippy${c.reset} ${c.dim}v0.5.1${c.reset}`)
 console.log(`  ${c.dim}The paperclip that never left.${c.reset}`)
 console.log()
 
