@@ -19,12 +19,17 @@ export class ClippyChatClient extends EventEmitter {
   private abortController: AbortController | null = null
   private history: ChatMessage[] = []
   private maxHistory = 50 // Keep last 50 messages to avoid token overflow
+  private gatewayReady = false
 
   constructor(port = 19789, token = '') {
     super()
     this.baseUrl = `http://127.0.0.1:${port}`
     this.token = token
     this.agentId = 'main'
+  }
+
+  setGatewayReady(ready: boolean): void {
+    this.gatewayReady = ready
   }
 
   setToken(token: string): void {
@@ -48,6 +53,15 @@ export class ClippyChatClient extends EventEmitter {
    * and will autonomously execute tools as needed.
    */
   async send(text: string, systemPrompt?: string): Promise<void> {
+    if (!this.gatewayReady) {
+      this.emit('message', {
+        type: 'response',
+        content: 'OpenClaw Gateway is not running. Please check your installation and restart the app.',
+        done: true
+      } as StreamMessage)
+      return
+    }
+
     const messages: ChatMessage[] = []
 
     if (systemPrompt) {
@@ -98,93 +112,7 @@ export class ClippyChatClient extends EventEmitter {
         return
       }
 
-      // Parse SSE stream
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let fullContent = ''
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || '' // Keep incomplete line in buffer
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const data = line.slice(6).trim()
-          if (data === '[DONE]') {
-            if (fullContent) {
-              this.addToHistory('assistant', fullContent)
-            }
-            this.emit('message', {
-              type: 'response',
-              content: fullContent,
-              done: true
-            } as StreamMessage)
-            return
-          }
-
-          try {
-            const parsed = JSON.parse(data)
-            const choice = parsed.choices?.[0]
-
-            if (!choice) continue
-
-            // Check for tool calls (OpenClaw agent executing tools)
-            if (choice.delta?.tool_calls) {
-              for (const tc of choice.delta.tool_calls) {
-                if (tc.function?.name) {
-                  this.emit('message', {
-                    type: 'tool-start',
-                    content: tc.function.name,
-                    toolName: tc.function.name,
-                    done: false
-                  } as StreamMessage)
-                }
-                if (tc.function?.arguments) {
-                  // Tool arguments streaming — usually not needed for UI
-                }
-              }
-            }
-
-            // Regular content delta
-            const delta = choice.delta?.content
-            if (delta) {
-              fullContent += delta
-              this.emit('message', {
-                type: 'chunk',
-                content: delta,
-                done: false
-              } as StreamMessage)
-            }
-
-            // Check for finish reason
-            if (choice.finish_reason === 'tool_calls') {
-              // Agent is executing tools, more content will follow
-              this.emit('message', {
-                type: 'tool-result',
-                content: 'Executing...',
-                done: false
-              } as StreamMessage)
-            }
-          } catch {
-            // Skip malformed JSON lines
-          }
-        }
-      }
-
-      // If we get here without [DONE], still emit final
-      if (fullContent) {
-        this.addToHistory('assistant', fullContent)
-        this.emit('message', {
-          type: 'response',
-          content: fullContent,
-          done: true
-        } as StreamMessage)
-      }
+      await this.parseSSEStream(response.body)
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         this.emit('message', {
@@ -192,6 +120,148 @@ export class ClippyChatClient extends EventEmitter {
           content: `Connection error: ${err.message}`,
           done: true
         } as StreamMessage)
+      }
+    }
+  }
+
+  private async parseSSEStream(body: ReadableStream<Uint8Array>): Promise<void> {
+    const reader = body.getReader()
+    const decoder = new TextDecoder()
+    let fullContent = ''
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || '' // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6).trim()
+        if (data === '[DONE]') {
+          if (fullContent) {
+            this.addToHistory('assistant', fullContent)
+          }
+          this.emit('message', {
+            type: 'response',
+            content: fullContent,
+            done: true
+          } as StreamMessage)
+          return
+        }
+
+        try {
+          const parsed = JSON.parse(data)
+          const choice = parsed.choices?.[0]
+
+          if (!choice) continue
+
+          // Check for tool calls (OpenClaw agent executing tools)
+          if (choice.delta?.tool_calls) {
+            for (const tc of choice.delta.tool_calls) {
+              if (tc.function?.name) {
+                this.emit('message', {
+                  type: 'tool-start',
+                  content: tc.function.name,
+                  toolName: tc.function.name,
+                  done: false
+                } as StreamMessage)
+              }
+              if (tc.function?.arguments) {
+                // Tool arguments streaming — usually not needed for UI
+              }
+            }
+          }
+
+          // Regular content delta
+          const delta = choice.delta?.content
+          if (delta) {
+            fullContent += delta
+            this.emit('message', {
+              type: 'chunk',
+              content: delta,
+              done: false
+            } as StreamMessage)
+          }
+
+          // Check for finish reason
+          if (choice.finish_reason === 'tool_calls') {
+            // Agent is executing tools, more content will follow
+            this.emit('message', {
+              type: 'tool-result',
+              content: 'Executing...',
+              done: false
+            } as StreamMessage)
+          }
+        } catch {
+          // Skip malformed JSON lines
+        }
+      }
+    }
+
+    // If we get here without [DONE], still emit final
+    if (fullContent) {
+      this.addToHistory('assistant', fullContent)
+      this.emit('message', {
+        type: 'response',
+        content: fullContent,
+        done: true
+      } as StreamMessage)
+    }
+  }
+
+  async sendWithImage(text: string, imageDataUrl: string): Promise<void> {
+    if (!this.gatewayReady) {
+      this.emit('message', {
+        type: 'response',
+        content: 'OpenClaw Gateway is not running.',
+        done: true
+      } as StreamMessage)
+      return
+    }
+
+    const userContent = [
+      { type: 'image_url', image_url: { url: imageDataUrl } },
+      { type: 'text', text }
+    ]
+
+    const messages: any[] = []
+    messages.push(...this.history)
+    messages.push({ role: 'user', content: userContent })
+
+    this.history.push({ role: 'user', content: text + ' [with screenshot]' })
+
+    this.abortController = new AbortController()
+
+    try {
+      const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-openclaw-agent-id': this.agentId,
+          ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
+        },
+        body: JSON.stringify({ model: 'openclaw', messages, stream: true }),
+        signal: this.abortController.signal
+      })
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => response.statusText)
+        this.emit('message', { type: 'response', content: `Error: ${response.status} — ${errText}`, done: true } as StreamMessage)
+        return
+      }
+      if (!response.body) {
+        this.emit('message', { type: 'response', content: 'Error: No response body', done: true } as StreamMessage)
+        return
+      }
+
+      await this.parseSSEStream(response.body)
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        this.emit('message', { type: 'response', content: `Connection error: ${err.message}`, done: true } as StreamMessage)
       }
     }
   }

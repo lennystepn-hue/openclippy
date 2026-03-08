@@ -22,6 +22,10 @@ declare global {
       setupApiKey: (provider: string, key: string) => Promise<boolean>
       checkAuthStatus: () => Promise<string>
 
+      // Screenshot
+      captureScreen: () => Promise<string | null>
+      sendMessageWithImage: (text: string, imageDataUrl: string) => void
+
       // Shell
       openExternal: (url: string) => void
 

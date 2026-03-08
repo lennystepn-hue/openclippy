@@ -40,6 +40,11 @@ contextBridge.exposeInMainWorld('clippy', {
   // Shell
   openExternal: (url: string) => ipcRenderer.send('shell:openExternal', url),
 
+  // Screenshot
+  captureScreen: () => ipcRenderer.invoke('screenshot:capture'),
+  sendMessageWithImage: (text: string, imageDataUrl: string) =>
+    ipcRenderer.send('chat:sendWithImage', text, imageDataUrl),
+
   // Window drag
   startDrag: () => ipcRenderer.send('window:startDrag'),
   dragMove: (dx: number, dy: number) => ipcRenderer.send('window:dragMove', dx, dy)

@@ -56,6 +56,26 @@ export function initChat(widget: ClippyWidget): void {
     widget.playAnimation('GetAttention')
   })
 
+  // Screenshot button
+  const screenshotBtn = document.querySelector('.bubble-screenshot-btn')
+  screenshotBtn?.addEventListener('click', async () => {
+    if (screenshotBtn) screenshotBtn.textContent = '...'
+    const dataUrl = await window.clippy.captureScreen()
+    if (!dataUrl) {
+      if (screenshotBtn) screenshotBtn.textContent = '\u{1F4F7}'
+      return
+    }
+    const userText = input.value.trim() || 'What do you see on my screen?'
+    input.value = ''
+    widget.speak(
+      `<div class="chat-user">${escapeHtml(userText)}<br><img class="chat-image" src="${dataUrl}" /></div>` +
+      `<div class="chat-thinking">Analyzing screenshot...</div>`
+    )
+    widget.setState('thinking')
+    window.clippy.sendMessageWithImage(userText, dataUrl)
+    if (screenshotBtn) screenshotBtn.textContent = '\u{1F4F7}'
+  })
+
   // Delegated click handler for copy buttons and links
   document.querySelector('.bubble-content')?.addEventListener('click', (e) => {
     const target = e.target as HTMLElement

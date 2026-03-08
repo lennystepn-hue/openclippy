@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, app, shell } from 'electron'
+import { ipcMain, BrowserWindow, app, shell, desktopCapturer } from 'electron'
 import path from 'path'
 import { ClippyChatClient } from './openclaw/http-client'
 import { PersonalityManager } from './personality'
@@ -14,6 +14,27 @@ export function setupIPC(
   // Chat — sends to OpenClaw agent (which has full tool access)
   ipcMain.on('chat:send', (_event, text: string) => {
     chatClient.send(text)
+  })
+
+  // Screenshot capture
+  ipcMain.handle('screenshot:capture', async () => {
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ['screen'],
+        thumbnailSize: { width: 1920, height: 1080 }
+      })
+      if (sources.length === 0) return null
+      const screenshot = sources[0].thumbnail.toPNG()
+      return `data:image/png;base64,${screenshot.toString('base64')}`
+    } catch (err) {
+      console.error('Screenshot capture failed:', err)
+      return null
+    }
+  })
+
+  // Chat with image
+  ipcMain.on('chat:sendWithImage', (_event, text: string, imageDataUrl: string) => {
+    chatClient.sendWithImage(text, imageDataUrl)
   })
 
   // Window dragging

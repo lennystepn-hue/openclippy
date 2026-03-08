@@ -80,7 +80,10 @@ export class ClippyWidget {
     el.innerHTML = `
       <div class="bubble-content"></div>
       <div class="bubble-input-area hidden">
-        <input type="text" class="bubble-input" placeholder="Ask Clippy..." />
+        <div class="bubble-input-row">
+          <input type="text" class="bubble-input" placeholder="Ask Clippy..." />
+          <button class="bubble-screenshot-btn" title="Take screenshot">&#x1F4F7;</button>
+        </div>
       </div>
       <div class="bubble-actions"></div>
     `
