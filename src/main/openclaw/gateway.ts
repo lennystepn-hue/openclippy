@@ -16,22 +16,21 @@ function findOpenClawBin(): BinResult | null {
   const ext = isWindows ? '.cmd' : ''
   const candidates: BinResult[] = []
 
-  // 1. Packaged app: use Electron as Node.js runtime with ELECTRON_RUN_AS_NODE=1
-  //    This makes process.execPath behave as plain node (no window, no Electron APIs)
-  //    which avoids both fork bombs AND the need for node.js to be installed
-  if (app.isPackaged) {
-    const unpackedDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules')
-    const mjsEntry = path.join(unpackedDir, 'openclaw', 'openclaw.mjs')
+  // OpenClaw requires Node.js 22.12+ and has many npm dependencies.
+  // Bundling it inside the asar doesn't work because Node can't resolve
+  // dependencies from an unpacked dir when the rest is in asar.
+  // Strategy: Use globally installed openclaw, or local node_modules in dev.
 
-    if (fs.existsSync(mjsEntry)) {
-      // Use Electron itself as Node runtime (ELECTRON_RUN_AS_NODE=1 is set in env during spawn)
-      candidates.push({ bin: process.execPath, script: mjsEntry })
-    }
-
-    // Fallback to .bin shim
-    candidates.push({
-      bin: path.join(unpackedDir, '.bin', `openclaw${ext}`)
-    })
+  // 1. Global install (works on all platforms — recommended for end users)
+  //    Check this FIRST so packaged apps find it reliably
+  try {
+    const globalPath = execSync(isWindows ? 'where openclaw' : 'which openclaw', {
+      encoding: 'utf-8',
+      timeout: 3000
+    }).trim().split('\n')[0]
+    if (globalPath) candidates.push({ bin: globalPath })
+  } catch {
+    // not globally installed
   }
 
   // 2. Dev mode: local node_modules
@@ -41,17 +40,6 @@ function findOpenClawBin(): BinResult | null {
   ]
   for (const p of devPaths) {
     candidates.push({ bin: p })
-  }
-
-  // 3. Global install
-  try {
-    const globalPath = execSync(isWindows ? 'where openclaw' : 'which openclaw', {
-      encoding: 'utf-8',
-      timeout: 3000
-    }).trim().split('\n')[0]
-    if (globalPath) candidates.push({ bin: globalPath })
-  } catch {
-    // not globally installed
   }
 
   for (const candidate of candidates) {
@@ -125,12 +113,6 @@ export class OpenClawGateway extends EventEmitter {
       const isWindows = process.platform === 'win32'
       const env = { ...process.env }
 
-      // When using Electron as Node runtime, set ELECTRON_RUN_AS_NODE=1
-      // This makes process.execPath behave as plain node.js (no window, no fork bomb)
-      if (result.script && result.bin === process.execPath) {
-        env.ELECTRON_RUN_AS_NODE = '1'
-      }
-
       if (this.configPath) {
         env.OPENCLAW_CONFIG_PATH = this.configPath
       }
@@ -145,10 +127,15 @@ export class OpenClawGateway extends EventEmitter {
 
       let settled = false
 
+      // Set CWD to openclaw package dir when running .mjs script directly
+      // (openclaw.mjs uses relative imports like ./dist/entry.js)
+      const cwd = result.script ? path.dirname(result.script) : undefined
+
       try {
         this.process = spawn(spawnBin, spawnArgs, {
           stdio: ['pipe', 'pipe', 'pipe'],
           env,
+          cwd,
           // Only use shell for .cmd files on Windows, not when running node directly
           shell: isWindows && !result.script
         })
