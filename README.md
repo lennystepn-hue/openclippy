@@ -49,9 +49,21 @@ That's OpenClippy.
 | Feature | Description |
 |---------|-------------|
 | **Original Retro Sprites** | Authentic Office 97 Clippy — 43 animation states extracted from the original `.acs` files. Pixelated. Beautiful. |
-| **AI Chat** | Talk to Clippy in the classic yellow speech bubble. He answers via Claude, GPT, DeepSeek, or local LLMs (Ollama). |
+| **AI Chat** | Talk to Clippy in the classic yellow speech bubble. He answers via Claude, GPT, DeepSeek, or local LLMs (Ollama). Streaming responses with markdown rendering. |
 | **Claude OAuth** | One-click login with your Claude Pro/Max subscription. No API key needed. Auto-refreshes. |
 | **Cross-Platform** | Windows, macOS, Linux. Clippy doesn't discriminate. |
+| **Persistent Memory** | Clippy remembers you across sessions. Names, preferences, inside jokes — all stored in `MEMORY.md` and referenced naturally. |
+| **Auto Language** | Write in German? Clippy antwortet auf Deutsch. He mirrors whatever language you use. |
+
+### Chat UX
+| Feature | Description |
+|---------|-------------|
+| **Screenshot Capture** | Click the camera button to capture your screen. Clippy hides, takes a screenshot, and analyzes what he sees using vision AI. |
+| **Drag & Drop** | Drop images or files directly into the chat. Images get analyzed with vision, files get read and discussed. |
+| **Code Blocks** | Syntax-highlighted code with one-click copy buttons. Hover over any code block to copy. |
+| **Clickable Links** | URLs in responses open in your default browser. |
+| **Chat History** | Browse and resume previous conversations. Auto-saved, searchable, with new chat support. |
+| **Text Selection** | Select and copy any text from Clippy's responses. |
 
 ### The Cool Stuff
 | Feature | Description |
@@ -143,15 +155,26 @@ OpenClippy is full of secrets. Here are some we're willing to share:
 
 ## Installation
 
-### Download (Recommended)
+### Prerequisites
 
-Just download and run. No Node.js, no terminal, no nonsense.
+OpenClippy uses [OpenClaw](https://github.com/openclaw/openclaw) as its AI engine. You need it installed globally:
+
+```bash
+# Requires Node.js 22.12+
+npm install -g openclaw
+```
+
+Verify it works: `openclaw --version`
+
+### Download
 
 | Platform | Download | How |
 |----------|----------|-----|
 | **Windows** | [`.exe` Installer](https://github.com/lennystepn-hue/openclippy/releases/latest) | Double-click → Install → Done |
 | **macOS** | [`.dmg`](https://github.com/lennystepn-hue/openclippy/releases/latest) | Open → Drag to Applications → Done |
 | **Linux** | [`.AppImage`](https://github.com/lennystepn-hue/openclippy/releases/latest) | `chmod +x` → Run → Done |
+
+The app finds `openclaw` from your PATH automatically. On first launch, the setup wizard walks you through authentication (Claude OAuth, API key, etc.).
 
 ### From Source (For Contributors)
 
@@ -215,7 +238,7 @@ npm run build  # Production build
 │  └─────────────┘                        │
 │                                         │
 │  ┌─────────────────────────────────────┐ │
-│  │     OpenClaw Gateway (Embedded)     │ │
+│  │    OpenClaw Gateway (System CLI)    │ │
 │  │     ┌─────┐ ┌──────┐ ┌──────────┐  │ │
 │  │     │Claude│ │ GPT  │ │  Ollama  │  │ │
 │  │     │ Pro  │ │  4o  │ │ (Local)  │  │ │
@@ -233,7 +256,7 @@ npm run build  # Production build
 | Component | Technology |
 |-----------|-----------|
 | **Desktop Framework** | Electron 33+ |
-| **Agent Engine** | [OpenClaw](https://github.com/openclaw/openclaw) (embedded) |
+| **Agent Engine** | [OpenClaw](https://github.com/openclaw/openclaw) (system CLI, spawned as gateway) |
 | **Language** | TypeScript (100%) |
 | **Sprites** | Original Office 97 Clippy (extracted from `.acs`) |
 | **LLM Providers** | Claude (OAuth), ChatGPT (OAuth), DeepSeek, Ollama, any OpenAI-compatible |
@@ -257,6 +280,7 @@ openclippy/
 │   │   ├── workflows/         # Pattern detection + automation
 │   │   ├── voice/             # TTS + STT
 │   │   ├── personality.ts     # Chill / Active / Chaos
+│   │   ├── chat-history.ts    # Persistent conversation storage
 │   │   ├── easter-eggs.ts     # 🥚
 │   │   ├── settings.ts        # Persistent config
 │   │   └── ipc.ts             # Main ↔ Renderer bridge
