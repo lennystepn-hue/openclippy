@@ -100,6 +100,16 @@ export function initChat(widget: ClippyWidget): void {
       }
     }
 
+    // Chat images — open in external browser
+    if (target.tagName === 'IMG' && target.classList.contains('chat-image')) {
+      e.preventDefault()
+      e.stopPropagation()
+      const src = (target as HTMLImageElement).src
+      if (src && src.startsWith('http')) {
+        window.clippy.openExternal(src)
+      }
+    }
+
     // Clickable links — open in external browser
     if (target.classList.contains('chat-link')) {
       e.preventDefault()
@@ -130,6 +140,8 @@ function formatResponse(text: string): string {
     })
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img class="chat-image" src="$2" alt="$1" />')
+    .replace(/(?<![="'])(https?:\/\/[^\s<)]+\.(?:png|jpe?g|gif|webp|svg))(?=[)\s<]|$)/gi, '<img class="chat-image" src="$1" />')
     .replace(/(?<![="'])(https?:\/\/[^\s<)]+)/g, '<a class="chat-link" href="$1">$1</a>')
     .replace(/\n/g, '<br>')
 }
