@@ -10,8 +10,14 @@ contextBridge.exposeInMainWorld('clippy', {
     ipcRenderer.on('clippy:state', (_event, state) => callback(state)),
   onClippySpeak: (callback: (text: string, actions?: any[]) => void) =>
     ipcRenderer.on('clippy:speak', (_event, text, actions) => callback(text, actions)),
+  onSetupDone: (callback: () => void) =>
+    ipcRenderer.on('setup:done', () => callback()),
+  onModeChanged: (callback: (mode: string) => void) =>
+    ipcRenderer.on('clippy:mode-changed', (_event, mode) => callback(mode)),
   setMode: (mode: string) => ipcRenderer.send('clippy:mode', mode),
   getMode: () => ipcRenderer.invoke('clippy:getMode'),
   toggleChat: () => ipcRenderer.send('clippy:toggleChat'),
-  dismiss: () => ipcRenderer.send('clippy:dismiss')
+  dismiss: () => ipcRenderer.send('clippy:dismiss'),
+  isFirstRun: () => ipcRenderer.invoke('setup:isFirstRun'),
+  completeSetup: (data: any) => ipcRenderer.send('setup:complete', data)
 })

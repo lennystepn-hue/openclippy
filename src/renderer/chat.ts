@@ -6,10 +6,14 @@ declare global {
       onChunk: (callback: (msg: any) => void) => void
       onClippyState: (callback: (state: string) => void) => void
       onClippySpeak: (callback: (text: string, actions?: any[]) => void) => void
+      onSetupDone: (callback: () => void) => void
+      onModeChanged: (callback: (mode: string) => void) => void
       setMode: (mode: string) => void
       getMode: () => Promise<string>
       toggleChat: () => void
       dismiss: () => void
+      isFirstRun: () => Promise<boolean>
+      completeSetup: (data: Record<string, unknown>) => void
     }
   }
 }

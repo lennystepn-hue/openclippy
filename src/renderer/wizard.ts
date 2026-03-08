@@ -5,6 +5,7 @@ declare global {
   interface Window {
     clippy: {
       sendMessage: (data: string) => void
+      completeSetup: (data: Record<string, unknown>) => void
     }
   }
 }
@@ -217,8 +218,7 @@ export class SetupWizard {
   }
 
   private finish(): void {
-    const configJson = JSON.stringify(this.formData)
-    window.clippy.sendMessage(configJson)
+    window.clippy.completeSetup(this.formData)
 
     this.clippy.speak(
       '<div class="wizard-complete">Alles klar, ich bin ready. Ignorier mich oder benutz mich — ich bin eh hier.</div>'

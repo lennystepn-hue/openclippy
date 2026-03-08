@@ -1,12 +1,21 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { ClippyChatClient, IncomingMessage } from './openclaw/ws-client'
+import { ClippyChatClient } from './openclaw/http-client'
+import { PersonalityManager } from './personality'
+import { Settings } from './settings'
 
-export function setupIPC(clippyWindow: BrowserWindow, chatClient: ClippyChatClient): void {
+export function setupIPC(
+  clippyWindow: BrowserWindow,
+  chatClient: ClippyChatClient,
+  personality: PersonalityManager,
+  settings: Settings
+): void {
   ipcMain.on('chat:send', (_event, text: string) => {
-    chatClient.send(text)
+    const systemPrompt = personality.getSystemPrompt()
+
+    chatClient.send(text, systemPrompt)
   })
 
-  chatClient.on('message', (msg: IncomingMessage) => {
+  chatClient.on('message', (msg) => {
     if (msg.type === 'chunk') {
       clippyWindow.webContents.send('chat:chunk', msg)
     } else if (msg.type === 'response') {
@@ -14,8 +23,22 @@ export function setupIPC(clippyWindow: BrowserWindow, chatClient: ClippyChatClie
     }
   })
 
+  chatClient.on('error', (err) => {
+    clippyWindow.webContents.send('chat:response', {
+      type: 'response',
+      content: `Error: ${err.message}`,
+      done: true
+    })
+  })
+
   ipcMain.on('clippy:mode', (_event, mode: string) => {
-    clippyWindow.webContents.send('clippy:state', mode === 'chaos' ? 'excited' : 'idle')
+    personality.setMode(mode as any)
+    settings.set('personality', mode as any)
+    clippyWindow.webContents.send('clippy:mode-changed', mode)
+  })
+
+  ipcMain.handle('clippy:getMode', () => {
+    return personality.currentMode()
   })
 
   ipcMain.on('clippy:toggleChat', () => {
@@ -24,5 +47,31 @@ export function setupIPC(clippyWindow: BrowserWindow, chatClient: ClippyChatClie
 
   ipcMain.on('clippy:dismiss', () => {
     clippyWindow.webContents.send('clippy:dismiss')
+  })
+
+  // Setup wizard completion
+  ipcMain.on('setup:complete', (_event, data: Record<string, unknown>) => {
+    // Save all settings from wizard
+    if (data.provider) settings.set('provider', data.provider as string)
+    if (data.apiKey) settings.set('apiKey', data.apiKey as string)
+    if (data.personality) {
+      settings.set('personality', data.personality as any)
+      personality.setMode(data.personality as any)
+    }
+    if (data.visionProvider) settings.set('visionProvider', data.visionProvider as string)
+    if (data.ttsEngine) settings.set('ttsEngine', data.ttsEngine as any)
+    if (data.hotkey) settings.set('hotkey', data.hotkey as string)
+    if (typeof data.autostart === 'boolean') settings.set('autostart', data.autostart)
+    if (typeof data.sttEnabled === 'boolean') settings.set('sttEnabled', data.sttEnabled)
+
+    settings.set('setupComplete', true)
+
+    // Notify renderer that setup is done
+    clippyWindow.webContents.send('setup:done')
+  })
+
+  // Check if first run
+  ipcMain.handle('setup:isFirstRun', () => {
+    return settings.isFirstRun()
   })
 }
