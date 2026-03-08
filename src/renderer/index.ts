@@ -1,6 +1,7 @@
 import { ClippyWidget } from './clippy'
 import { initChat } from './chat'
 import { SetupWizard } from './wizard'
+import { SettingsPanel } from './settings-panel'
 
 const GREETINGS = [
   "Hey! Long time no see. Did you miss me? Don't answer that.",
@@ -23,6 +24,21 @@ const GREETINGS = [
 const container = document.getElementById('clippy-container')
 if (container) {
   const clippy = new ClippyWidget(container)
+  const settingsPanel = new SettingsPanel(clippy)
+
+  // Settings open from tray
+  window.clippy.onSettingsOpen(() => {
+    settingsPanel.open()
+  })
+
+  // Re-run wizard request
+  window.clippy.onShowWizard(() => {
+    const bubble = document.getElementById('clippy-bubble')
+    if (bubble) {
+      const wizard = new SetupWizard(clippy, bubble)
+      wizard.start()
+    }
+  })
 
   // Check if first run
   window.clippy.isFirstRun().then((isFirstRun: boolean) => {

@@ -16,6 +16,18 @@ export function setupIPC(
     chatClient.send(text)
   })
 
+  // Window dragging
+  let dragStartPos: { x: number; y: number } | null = null
+  ipcMain.on('window:startDrag', () => {
+    const pos = clippyWindow.getPosition()
+    dragStartPos = { x: pos[0], y: pos[1] }
+  })
+
+  ipcMain.on('window:dragMove', (_event, dx: number, dy: number) => {
+    const pos = clippyWindow.getPosition()
+    clippyWindow.setPosition(pos[0] + dx, pos[1] + dy)
+  })
+
   // Stream messages from OpenClaw back to renderer
   let isHeartbeat = false
 
@@ -138,5 +150,53 @@ export function setupIPC(
 
   ipcMain.handle('setup:isFirstRun', () => {
     return settings.isFirstRun()
+  })
+
+  // Settings — get all and update individual
+  ipcMain.handle('settings:getAll', () => {
+    const all = settings.getAll()
+    // Mask API keys for security (only show last 4 chars)
+    const masked = { ...all }
+    if (masked.apiKey) {
+      masked.apiKey = masked.apiKey.length > 4
+        ? '•'.repeat(masked.apiKey.length - 4) + masked.apiKey.slice(-4)
+        : '••••'
+    }
+    if (masked.visionApiKey) {
+      masked.visionApiKey = masked.visionApiKey.length > 4
+        ? '•'.repeat(masked.visionApiKey.length - 4) + masked.visionApiKey.slice(-4)
+        : '••••'
+    }
+    if (masked.ttsApiKey) {
+      masked.ttsApiKey = masked.ttsApiKey.length > 4
+        ? '•'.repeat(masked.ttsApiKey.length - 4) + masked.ttsApiKey.slice(-4)
+        : '••••'
+    }
+    return masked
+  })
+
+  ipcMain.on('settings:update', (_event, updates: Record<string, unknown>) => {
+    for (const [key, value] of Object.entries(updates)) {
+      // Skip masked API keys (don't overwrite with dots)
+      if (typeof value === 'string' && value.startsWith('•')) continue
+
+      settings.set(key as any, value as any)
+    }
+
+    // Apply personality change immediately
+    if (updates.personality) {
+      const m = updates.personality as 'chill' | 'active' | 'chaos'
+      personality.setMode(m)
+      writeSoulFile(m)
+      clippyWindow.webContents.send('clippy:mode-changed', m)
+    }
+
+    clippyWindow.webContents.send('settings:saved')
+  })
+
+  // Reset setup — re-run wizard
+  ipcMain.on('settings:resetSetup', () => {
+    settings.set('setupComplete', false)
+    clippyWindow.webContents.send('settings:showWizard')
   })
 }

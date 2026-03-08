@@ -32,8 +32,43 @@ export class ClippyWidget {
     el.style.backgroundPosition = '0px 0px'
     el.style.cursor = 'pointer'
 
-    // Click toggles chat (no drag on sprite — use bubble area for drag)
-    el.addEventListener('click', () => this.toggleChat())
+    // Manual drag + click detection on sprite
+    let isDragging = false
+    let dragStartX = 0
+    let dragStartY = 0
+    let mouseDownTime = 0
+
+    el.addEventListener('mousedown', (e) => {
+      isDragging = false
+      dragStartX = e.screenX
+      dragStartY = e.screenY
+      mouseDownTime = Date.now()
+      ;(window as any).clippy.startDrag()
+
+      const onMouseMove = (e2: MouseEvent) => {
+        const dx = e2.screenX - dragStartX
+        const dy = e2.screenY - dragStartY
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          isDragging = true
+          ;(window as any).clippy.dragMove(dx, dy)
+          dragStartX = e2.screenX
+          dragStartY = e2.screenY
+        }
+      }
+
+      const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
+
+        // If it was a short click (not drag), toggle chat
+        if (!isDragging && Date.now() - mouseDownTime < 300) {
+          this.toggleChat()
+        }
+      }
+
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    })
 
     return el
   }
@@ -99,12 +134,16 @@ export class ClippyWidget {
 
   dismiss(): void {
     this.bubbleEl.classList.add('hidden')
+    this.chatVisible = false
   }
+
+  private chatVisible = false
 
   showChat(): void {
     const inputArea = this.bubbleEl.querySelector('.bubble-input-area') as HTMLElement
     inputArea.classList.remove('hidden')
     this.bubbleEl.classList.remove('hidden')
+    this.chatVisible = true
     const input = this.bubbleEl.querySelector('.bubble-input') as HTMLInputElement
     input.focus()
   }
@@ -112,14 +151,19 @@ export class ClippyWidget {
   hideChat(): void {
     const inputArea = this.bubbleEl.querySelector('.bubble-input-area') as HTMLElement
     inputArea.classList.add('hidden')
+    this.chatVisible = false
   }
 
   toggleChat(): void {
-    const inputArea = this.bubbleEl.querySelector('.bubble-input-area') as HTMLElement
-    if (inputArea.classList.contains('hidden')) {
-      this.showChat()
-    } else {
+    if (this.chatVisible) {
       this.dismiss()
+    } else {
+      // Show bubble with input ready
+      const content = this.bubbleEl.querySelector('.bubble-content') as HTMLElement
+      if (!content.innerHTML.trim()) {
+        content.innerHTML = '<span style="color:#888; font-size:12px;">Ask me anything...</span>'
+      }
+      this.showChat()
     }
   }
 

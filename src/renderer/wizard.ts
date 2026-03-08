@@ -1,18 +1,6 @@
 import { ClippyWidget } from './clippy'
 import { WizardFlow, WizardField } from './wizard-steps'
 
-declare global {
-  interface Window {
-    clippy: {
-      sendMessage: (data: string) => void
-      completeSetup: (data: Record<string, unknown>) => void
-      startClaudeLogin: () => Promise<{ success: boolean; error?: string }>
-      setupApiKey: (provider: string, key: string) => Promise<boolean>
-      checkAuthStatus: () => Promise<string>
-    }
-  }
-}
-
 export class SetupWizard {
   private flow: WizardFlow
   private clippy: ClippyWidget

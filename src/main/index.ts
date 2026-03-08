@@ -91,7 +91,7 @@ app.whenReady().then(async () => {
   setupIPC(clippyWindow, chatClient, personality, settings)
 
   // 7. System tray
-  createTray(clippyWindow)
+  createTray(clippyWindow, personality, settings)
 
   // 8. Global hotkey
   const hotkey = settings.get('hotkey') || 'CommandOrControl+Shift+C'

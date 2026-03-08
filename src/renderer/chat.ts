@@ -1,27 +1,3 @@
-declare global {
-  interface Window {
-    clippy: {
-      sendMessage: (text: string) => void
-      onResponse: (callback: (msg: any) => void) => void
-      onChunk: (callback: (msg: any) => void) => void
-      onTool: (callback: (msg: any) => void) => void
-      onClippyState: (callback: (state: string) => void) => void
-      onClippySpeak: (callback: (text: string, actions?: any[]) => void) => void
-      onSetupDone: (callback: () => void) => void
-      onModeChanged: (callback: (mode: string) => void) => void
-      setMode: (mode: string) => void
-      getMode: () => Promise<string>
-      toggleChat: () => void
-      dismiss: () => void
-      isFirstRun: () => Promise<boolean>
-      completeSetup: (data: Record<string, unknown>) => void
-      startClaudeLogin: () => Promise<{ success: boolean; error?: string }>
-      setupApiKey: (provider: string, key: string) => Promise<boolean>
-      checkAuthStatus: () => Promise<string>
-    }
-  }
-}
-
 import { ClippyWidget } from './clippy'
 
 export function initChat(widget: ClippyWidget): void {

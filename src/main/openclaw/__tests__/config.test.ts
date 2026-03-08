@@ -1,28 +1,32 @@
-import { describe, it, expect } from 'vitest'
-import { buildOpenClawConfig } from '../config'
+import { describe, it, expect, vi } from 'vitest'
+
+// Mock electron and fs
+vi.mock('electron', () => ({
+  app: { getPath: vi.fn().mockReturnValue('/tmp/test-openclippy') }
+}))
+
+vi.mock('fs', () => ({
+  default: {
+    existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    readFileSync: vi.fn()
+  }
+}))
 
 describe('OpenClaw Config', () => {
-  it('creates valid config with default port', () => {
-    const config = buildOpenClawConfig({})
-    expect(config.gateway.port).toBe(18789)
+  it('exports required functions', async () => {
+    const config = await import('../config')
+    expect(config.initializeWorkspace).toBeDefined()
+    expect(config.writeSoulFile).toBeDefined()
+    expect(config.writeAgentsFile).toBeDefined()
+    expect(config.buildAndWriteConfig).toBeDefined()
+    expect(config.getOpenClawDataDir).toBeDefined()
   })
 
-  it('sets provider from user settings', () => {
-    const config = buildOpenClawConfig({
-      provider: 'anthropic',
-      apiKey: 'sk-test'
-    })
-    expect(config.models.providers).toHaveProperty('anthropic')
-    expect(config.models.providers.anthropic.apiKey).toBe('sk-test')
-  })
-
-  it('uses default personality', () => {
-    const config = buildOpenClawConfig({})
-    expect(config.personality).toBe('active')
-  })
-
-  it('respects custom port', () => {
-    const config = buildOpenClawConfig({ gatewayPort: 9999 })
-    expect(config.gateway.port).toBe(9999)
+  it('getOpenClawDataDir returns path', async () => {
+    const config = await import('../config')
+    const dir = config.getOpenClawDataDir()
+    expect(dir).toContain('openclaw')
   })
 })

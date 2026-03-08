@@ -24,5 +24,20 @@ contextBridge.exposeInMainWorld('clippy', {
   completeSetup: (data: any) => ipcRenderer.send('setup:complete', data),
   startClaudeLogin: () => ipcRenderer.invoke('auth:claudeOAuth'),
   setupApiKey: (provider: string, key: string) => ipcRenderer.invoke('auth:setupApiKey', provider, key),
-  checkAuthStatus: () => ipcRenderer.invoke('auth:status')
+  checkAuthStatus: () => ipcRenderer.invoke('auth:status'),
+
+  // Settings
+  getSettings: () => ipcRenderer.invoke('settings:getAll'),
+  updateSettings: (updates: Record<string, unknown>) => ipcRenderer.send('settings:update', updates),
+  resetSetup: () => ipcRenderer.send('settings:resetSetup'),
+  onSettingsOpen: (callback: () => void) =>
+    ipcRenderer.on('settings:open', () => callback()),
+  onSettingsSaved: (callback: () => void) =>
+    ipcRenderer.on('settings:saved', () => callback()),
+  onShowWizard: (callback: () => void) =>
+    ipcRenderer.on('settings:showWizard', () => callback()),
+
+  // Window drag
+  startDrag: () => ipcRenderer.send('window:startDrag'),
+  dragMove: (dx: number, dy: number) => ipcRenderer.send('window:dragMove', dx, dy)
 })
