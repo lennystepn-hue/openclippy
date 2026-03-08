@@ -24,7 +24,7 @@ describe('ClippyWindow', () => {
 
   it('has correct default dimensions', () => {
     const config = getClippyWindowConfig()
-    expect(config.width).toBe(200)
-    expect(config.height).toBe(250)
+    expect(config.width).toBe(400)
+    expect(config.height).toBe(600)
   })
 })
