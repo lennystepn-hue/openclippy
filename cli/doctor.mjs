@@ -34,25 +34,7 @@ const c = {
 
 // ─── ASCII Clippy ────────────────────────────────────────────────────────────
 
-const CLIPPY_WAVE = `
-${c.yellow}    ╭──────────────────────────────────╮
-    │                                  │
-    │  PLACEHOLDER                     │
-    │                                  │
-    ╰──────────┬───────────────────────╯
-               │
-${c.white}         ┌───┴───┐
-         │ ◉   ◉ │
-         │   ▽   │
-         │  ───  │
-         └───┬───┘
-          ╭──┴──╮
-          │     │
-         ╱│     │╲
-        ╱ └──┬──┘ ╲
-             │
-            ╱ ╲${c.reset}
-`
+// Clippy is a paperclip, not a robot!
 
 function clippy(text) {
   const lines = text.split('\n')
@@ -64,17 +46,16 @@ function clippy(text) {
   const body = padded.map(l => `${c.yellow}    │${c.reset}  ${l}  ${c.yellow}│${c.reset}`).join('\n')
 
   const sprite = `
-${c.white}         ┌───┴───┐
-         │ ${c.cyan}◉   ◉${c.white} │
-         │   ${c.yellow}▽${c.white}   │
-         │  ${c.green}───${c.white}  │
-         └───┬───┘
-          ╭──┴──╮
-          │     │
-         ╱│     │╲
-        ╱ └──┬──┘ ╲
-             │
-            ╱ ╲${c.reset}`
+${c.yellow}            ╭───╮
+            │   │
+         ╭──╯   ╰──╮
+         │  ${c.cyan}◉   ◉${c.yellow}  │
+         │    ${c.white}▽${c.yellow}    │
+         ╰────┬────╯
+              │
+              │
+              │
+             ╱ ╲${c.reset}`
 
   console.log(`\n${top}\n${body}\n${bot}`)
   console.log(`${c.yellow}               │${c.reset}`)
@@ -723,7 +704,7 @@ async function setup() {
 const command = process.argv[2]
 
 console.log()
-console.log(`  ${c.bold}${c.yellow}📎 OpenClippy${c.reset} ${c.dim}v0.5.1${c.reset}`)
+console.log(`  ${c.bold}${c.yellow}📎 OpenClippy${c.reset} ${c.dim}v0.5.2${c.reset}`)
 console.log(`  ${c.dim}The paperclip that never left.${c.reset}`)
 console.log()
 
