@@ -9,7 +9,7 @@
  */
 
 import { execSync, spawn, execFile } from 'child_process'
-import { existsSync, createWriteStream, mkdirSync, chmodSync, renameSync } from 'fs'
+import { existsSync, createWriteStream, mkdirSync, chmodSync, renameSync, readFileSync, writeFileSync } from 'fs'
 import { platform, homedir, arch, tmpdir } from 'os'
 import { join, basename } from 'path'
 import { get as httpsGet } from 'https'
@@ -158,15 +158,44 @@ function checkOpenClawConfig() {
   const configDir = join(homedir(), '.openclaw')
   const configFile = join(configDir, 'openclaw.json')
 
-  if (existsSync(configFile)) {
-    pass(configFile)
-    return true
-  } else if (existsSync(configDir)) {
-    warn('directory exists but no config — run: openclaw onboard')
+  if (!existsSync(configFile)) {
+    if (existsSync(configDir)) {
+      warn('directory exists but no config — run: openclaw onboard')
+    } else {
+      fail('not configured — run: openclaw onboard')
+    }
     return false
-  } else {
-    fail('not configured — run: openclaw onboard')
-    return false
+  }
+
+  pass(configFile)
+  ensureChatCompletionsEnabled(configFile)
+  return true
+}
+
+/**
+ * OpenClippy needs gateway.http.endpoints.chatCompletions.enabled = true
+ * in the global OpenClaw config. This is disabled by default.
+ */
+function ensureChatCompletionsEnabled(configFile) {
+  try {
+    const raw = readFileSync(configFile, 'utf-8')
+    const config = JSON.parse(raw)
+
+    if (config?.gateway?.http?.endpoints?.chatCompletions?.enabled === true) {
+      pass('chatCompletions HTTP endpoint: enabled')
+      return
+    }
+
+    info(`${c.yellow}Enabling chatCompletions HTTP endpoint (required for OpenClippy)...${c.reset}`)
+    if (!config.gateway) config.gateway = {}
+    if (!config.gateway.http) config.gateway.http = {}
+    if (!config.gateway.http.endpoints) config.gateway.http.endpoints = {}
+    if (!config.gateway.http.endpoints.chatCompletions) config.gateway.http.endpoints.chatCompletions = {}
+    config.gateway.http.endpoints.chatCompletions.enabled = true
+    writeFileSync(configFile, JSON.stringify(config, null, 2))
+    pass('chatCompletions HTTP endpoint: now enabled')
+  } catch (err) {
+    warn(`could not verify chatCompletions: ${err.message}`)
   }
 }
 

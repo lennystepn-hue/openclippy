@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import os from 'os'
 import { app } from 'electron'
 
 export interface ClippyUserSettings {
@@ -373,6 +374,36 @@ export function buildAndWriteConfig(settings: ClippyUserSettings): string {
 }
 
 /**
+ * Ensure the global OpenClaw config (~/.openclaw/openclaw.json) has
+ * chatCompletions HTTP endpoint enabled. Without this, the gateway
+ * returns 404 on /v1/chat/completions since the endpoint is disabled by default.
+ */
+export function ensureGlobalChatCompletions(): void {
+  const globalConfigPath = path.join(os.homedir(), '.openclaw', 'openclaw.json')
+  if (!fs.existsSync(globalConfigPath)) return
+
+  try {
+    const raw = fs.readFileSync(globalConfigPath, 'utf-8')
+    const config = JSON.parse(raw)
+
+    // Check if already enabled
+    if (config?.gateway?.http?.endpoints?.chatCompletions?.enabled === true) return
+
+    // Deep-merge the setting
+    if (!config.gateway) config.gateway = {}
+    if (!config.gateway.http) config.gateway.http = {}
+    if (!config.gateway.http.endpoints) config.gateway.http.endpoints = {}
+    if (!config.gateway.http.endpoints.chatCompletions) config.gateway.http.endpoints.chatCompletions = {}
+    config.gateway.http.endpoints.chatCompletions.enabled = true
+
+    fs.writeFileSync(globalConfigPath, JSON.stringify(config, null, 2))
+    console.log('[config] Enabled chatCompletions in global OpenClaw config')
+  } catch (err) {
+    console.warn('[config] Could not update global OpenClaw config:', err)
+  }
+}
+
+/**
  * Initialize the full OpenClaw workspace (config + soul + agents)
  */
 export function initializeWorkspace(settings: ClippyUserSettings): string {
@@ -382,6 +413,9 @@ export function initializeWorkspace(settings: ClippyUserSettings): string {
   writeSoulFile(personality)
   writeAgentsFile()
   writeMemoryFile()
+
+  // Ensure the global OpenClaw config has the HTTP endpoint enabled
+  ensureGlobalChatCompletions()
 
   // Write config and return path
   return buildAndWriteConfig(settings)
