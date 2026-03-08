@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('clippy', {
     ipcRenderer.on('chat:response', (_event, msg) => callback(msg)),
   onChunk: (callback: (msg: any) => void) =>
     ipcRenderer.on('chat:chunk', (_event, msg) => callback(msg)),
+  onTool: (callback: (msg: any) => void) =>
+    ipcRenderer.on('chat:tool', (_event, msg) => callback(msg)),
   onClippyState: (callback: (state: string) => void) =>
     ipcRenderer.on('clippy:state', (_event, state) => callback(state)),
   onClippySpeak: (callback: (text: string, actions?: any[]) => void) =>

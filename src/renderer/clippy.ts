@@ -1,4 +1,5 @@
-import { AnimationStateMachine, ClippyState } from './animations'
+import { AnimationEngine, ClippyState } from './animations'
+import { CLIPPY_FRAMES } from './clippy-data'
 // @ts-ignore - PNG import handled by Vite
 import spriteMapUrl from '../../assets/sprites/clippy-map.png'
 
@@ -6,24 +7,36 @@ export class ClippyWidget {
   private container: HTMLElement
   private spriteEl: HTMLElement
   private bubbleEl: HTMLElement
-  private animationSM: AnimationStateMachine
+  private engine: AnimationEngine
 
   constructor(container: HTMLElement) {
     this.container = container
-    this.animationSM = new AnimationStateMachine((state) => this.onStateChange(state))
     this.spriteEl = this.createSpriteElement()
     this.bubbleEl = this.createBubbleElement()
     container.appendChild(this.bubbleEl)
     container.appendChild(this.spriteEl)
+
+    this.engine = new AnimationEngine(this.spriteEl, () => {
+      // After non-idle animation completes, return to idle loop
+    })
+
+    // Start idle loop immediately — Clippy is alive!
+    this.engine.startIdleLoop()
   }
 
   private createSpriteElement(): HTMLElement {
     const el = document.createElement('div')
     el.id = 'clippy-sprite'
-    el.className = 'clippy-sprite clippy-idle'
-    el.style.cssText = `-webkit-app-region: drag; cursor: grab; background-image: url('${spriteMapUrl}');`
+    el.className = 'clippy-sprite'
+    el.style.backgroundImage = `url('${spriteMapUrl}')`
+    el.style.backgroundPosition = '0px 0px'
+    el.style.cursor = 'grab'
+    el.style.setProperty('-webkit-app-region', 'drag')
+
     // Double-click toggles chat
     el.addEventListener('dblclick', () => this.toggleChat())
+
+    // Right-click context menu could go here
     return el
   }
 
@@ -41,15 +54,38 @@ export class ClippyWidget {
     return el
   }
 
-  setState(state: ClippyState): void {
-    this.animationSM.transition(state)
+  /**
+   * Play a named animation (e.g., 'Wave', 'Thinking', 'Congratulate')
+   */
+  playAnimation(name: string): void {
+    if (CLIPPY_FRAMES[name]) {
+      this.engine.stopIdleLoop()
+      this.engine.play(name)
+      // Resume idle after animation completes
+      setTimeout(() => this.engine.startIdleLoop(), 5000)
+    }
   }
 
+  /**
+   * Set Clippy's state — maps to the right animation
+   */
+  setState(state: ClippyState): void {
+    this.engine.stopIdleLoop()
+    this.engine.playState(state)
+
+    // Resume idle loop after a delay (unless it's a continuous state)
+    if (state !== 'thinking' && state !== 'listening') {
+      setTimeout(() => this.engine.startIdleLoop(), 5000)
+    }
+  }
+
+  /**
+   * Show speech bubble with text
+   */
   speak(text: string, actions?: { label: string; onClick: () => void }[]): void {
     const content = this.bubbleEl.querySelector('.bubble-content') as HTMLElement
     content.innerHTML = text
     this.bubbleEl.classList.remove('hidden')
-    this.animationSM.transition('talking')
 
     const actionsEl = this.bubbleEl.querySelector('.bubble-actions') as HTMLElement
     actionsEl.innerHTML = ''
@@ -65,7 +101,6 @@ export class ClippyWidget {
 
   dismiss(): void {
     this.bubbleEl.classList.add('hidden')
-    this.animationSM.transition('idle')
   }
 
   showChat(): void {
@@ -90,7 +125,7 @@ export class ClippyWidget {
     }
   }
 
-  private onStateChange(state: ClippyState): void {
-    this.spriteEl.className = `clippy-sprite clippy-${state}`
+  getEngine(): AnimationEngine {
+    return this.engine
   }
 }

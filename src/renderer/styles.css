@@ -232,3 +232,46 @@ html, body {
   font-weight: normal;
   cursor: pointer;
 }
+
+/* Chat Messages */
+.chat-user {
+  background: #e8e8e8;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.chat-thinking {
+  color: #888;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.chat-tool {
+  background: #e3f2fd;
+  border-left: 3px solid #1976d2;
+  padding: 4px 8px;
+  margin: 6px 0;
+  font-size: 11px;
+  color: #1565c0;
+  font-family: monospace;
+}
+
+/* Code in chat */
+pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 11px;
+  margin: 6px 0;
+}
+
+code {
+  background: #f0f0f0;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 12px;
+}

@@ -47,11 +47,19 @@ function findOpenClawBin(): string | null {
 export class OpenClawGateway extends EventEmitter {
   private process: ChildProcess | null = null
   private port: number
+  private configPath: string | null = null
   private ready = false
 
   constructor(port = 18789) {
     super()
     this.port = port
+  }
+
+  /**
+   * Set the config file path for OpenClaw to use
+   */
+  setConfigPath(configPath: string): void {
+    this.configPath = configPath
   }
 
   async start(): Promise<void> {
@@ -69,9 +77,14 @@ export class OpenClawGateway extends EventEmitter {
 
       this.emit('log', `Starting OpenClaw from: ${binPath}`)
 
+      const args = ['start', '--port', String(this.port)]
+      if (this.configPath) {
+        args.push('--config', this.configPath)
+      }
+
       const isWindows = process.platform === 'win32'
       try {
-        this.process = spawn(binPath, ['start', '--port', String(this.port)], {
+        this.process = spawn(binPath, args, {
           stdio: ['pipe', 'pipe', 'pipe'],
           env: { ...process.env },
           shell: isWindows
@@ -97,7 +110,6 @@ export class OpenClawGateway extends EventEmitter {
       })
 
       this.process.stderr?.on('data', (data: Buffer) => {
-        // Use 'log' instead of 'error' to avoid unhandled error crashes
         this.emit('log', `[stderr] ${data.toString()}`)
       })
 

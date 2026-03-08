@@ -3,6 +3,7 @@ import path from 'path'
 import { ClippyChatClient } from './openclaw/http-client'
 import { PersonalityManager } from './personality'
 import { Settings } from './settings'
+import { writeSoulFile } from './openclaw/config'
 
 export function setupIPC(
   clippyWindow: BrowserWindow,
@@ -10,31 +11,41 @@ export function setupIPC(
   personality: PersonalityManager,
   settings: Settings
 ): void {
+  // Chat — sends to OpenClaw agent (which has full tool access)
   ipcMain.on('chat:send', (_event, text: string) => {
-    const systemPrompt = personality.getSystemPrompt()
-
-    chatClient.send(text, systemPrompt)
+    chatClient.send(text)
   })
 
+  // Stream messages from OpenClaw back to renderer
   chatClient.on('message', (msg) => {
-    if (msg.type === 'chunk') {
-      clippyWindow.webContents.send('chat:chunk', msg)
-    } else if (msg.type === 'response') {
-      clippyWindow.webContents.send('chat:response', msg)
+    switch (msg.type) {
+      case 'chunk':
+        clippyWindow.webContents.send('chat:chunk', msg)
+        break
+      case 'response':
+        clippyWindow.webContents.send('chat:response', msg)
+        break
+      case 'tool-start':
+        clippyWindow.webContents.send('chat:tool', {
+          type: 'start',
+          toolName: msg.toolName
+        })
+        break
+      case 'tool-result':
+        clippyWindow.webContents.send('chat:tool', {
+          type: 'result',
+          content: msg.content
+        })
+        break
     }
   })
 
-  chatClient.on('error', (err) => {
-    clippyWindow.webContents.send('chat:response', {
-      type: 'response',
-      content: `Error: ${err.message}`,
-      done: true
-    })
-  })
-
+  // Personality mode change — also updates SOUL.md for OpenClaw
   ipcMain.on('clippy:mode', (_event, mode: string) => {
-    personality.setMode(mode as any)
-    settings.set('personality', mode as any)
+    const m = mode as 'chill' | 'active' | 'chaos'
+    personality.setMode(m)
+    settings.set('personality', m)
+    writeSoulFile(m)
     clippyWindow.webContents.send('clippy:mode-changed', mode)
   })
 
@@ -52,12 +63,13 @@ export function setupIPC(
 
   // Setup wizard completion
   ipcMain.on('setup:complete', (_event, data: Record<string, unknown>) => {
-    // Save all settings from wizard
     if (data.provider) settings.set('provider', data.provider as string)
     if (data.apiKey) settings.set('apiKey', data.apiKey as string)
     if (data.personality) {
-      settings.set('personality', data.personality as any)
-      personality.setMode(data.personality as any)
+      const m = data.personality as 'chill' | 'active' | 'chaos'
+      settings.set('personality', m)
+      personality.setMode(m)
+      writeSoulFile(m)
     }
     if (data.visionProvider) settings.set('visionProvider', data.visionProvider as string)
     if (data.ttsEngine) settings.set('ttsEngine', data.ttsEngine as any)
@@ -66,12 +78,10 @@ export function setupIPC(
     if (typeof data.sttEnabled === 'boolean') settings.set('sttEnabled', data.sttEnabled)
 
     settings.set('setupComplete', true)
-
-    // Notify renderer that setup is done
     clippyWindow.webContents.send('setup:done')
   })
 
-  // Auth setup handlers
+  // Auth handlers
   ipcMain.handle('auth:claudeOAuth', async () => {
     const { startClaudeOAuthFlow, saveTokens } = await import('./openclaw/auth')
     const tokenPath = path.join(app.getPath('userData'), 'claude-tokens.json')
@@ -90,11 +100,12 @@ export function setupIPC(
   })
 
   ipcMain.handle('auth:status', async () => {
-    const { checkAuthStatus } = await import('./openclaw/auth')
-    return checkAuthStatus()
+    const tokenPath = path.join(app.getPath('userData'), 'claude-tokens.json')
+    const { getValidToken } = await import('./openclaw/auth')
+    const token = await getValidToken(tokenPath)
+    return token ? 'authenticated' : 'not-authenticated'
   })
 
-  // Check if first run
   ipcMain.handle('setup:isFirstRun', () => {
     return settings.isFirstRun()
   })
