@@ -19,8 +19,13 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm run build
-      - run: npm run package
+      - run: npx electron-builder --publish never
       - uses: softprops/action-gh-release@v2
         with:
-          files: out/*
+          files: |
+            out/*.exe
+            out/*.dmg
+            out/*.zip
+            out/*.AppImage
+            out/*.deb
           generate_release_notes: true

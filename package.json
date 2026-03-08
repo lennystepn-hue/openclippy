@@ -1,6 +1,6 @@
 {
   "name": "openclippy",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The iconic Clippy, reborn as an autonomous AI desktop assistant powered by OpenClaw",
   "main": "dist/main/index.js",
   "scripts": {

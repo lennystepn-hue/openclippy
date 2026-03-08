@@ -60,6 +60,33 @@ That's OpenClippy.
 | **Voice** | Text-to-Speech and Speech-to-Text. Say "Hey Clippy" and he listens. He can also talk back. You've been warned. |
 | **Easter Eggs** | Classic Clippy quotes, Konami code secrets, and strong opinions about tabs vs spaces. |
 
+### The Dangerous Stuff
+> *Powered by [OpenClaw](https://github.com/openclaw/openclaw) — everything below is real. Not a gimmick.*
+
+| Feature | Description |
+|---------|-------------|
+| **Write Code** | Ask Clippy to write code. Functions, classes, entire files. He generates, you review (or don't — Chaos Mode doesn't care). |
+| **Edit & Refactor** | *"Hey Clippy, refactor this to use async/await."* — Done. He reads your files, understands context, and makes changes. |
+| **Delete Things** | Yes, Clippy can delete files. In Chaos Mode, he might suggest it unprompted. *"This file hasn't been imported anywhere in 6 months. Delete?"* |
+| **Run Commands** | Shell commands, build scripts, test suites. Clippy can execute them. *"Running your tests... 3 failed. Want me to fix them?"* |
+| **Git Operations** | Commit, branch, push, rebase. Clippy handles your git workflow. *"I've committed your changes. Message: 'fix: stuff'. You're welcome."* |
+| **Debug** | Paste an error, Clippy analyzes it, finds the file, reads the code, suggests a fix. Or just fixes it. |
+| **Read Your Screen** | Vision AI reads your screen on demand. *"I see 47 ESLint errors. Impressive."* |
+| **Automate Workflows** | Clippy detects repeating patterns and offers to automate them. Morning routine? CI pipeline? He's got it. |
+| **Browse & Research** | Need docs? An API reference? Stack Overflow answer? Clippy fetches it and summarizes. |
+| **Multi-Model** | Switch between Claude, GPT-4, DeepSeek, or local LLMs (Ollama) anytime. Same Clippy, different brain. |
+
+### What Can Go Wrong?
+
+| Scenario | What Clippy Does |
+|----------|-----------------|
+| You leave your PC unattended (Chaos Mode) | Renames variables to `banana`, `yolo`, `pleaseRefactorMe` |
+| You have 200+ lines in one function | *"This function is older than me. Want me to split it?"* |
+| You copy-paste from Stack Overflow | *"Ah yes, the ancient scrolls."* Then actually checks if the code works. |
+| You write `// TODO: fix later` | *"We both know 'later' means 'never'. Want me to fix it now?"* |
+| Your `.env` is in the git history | *"Congratulations, your secrets are on GitHub. Here's how to fix it."* |
+| You `rm -rf` something | *"Bold. I would have made a backup first. But you do you."* |
+
 ---
 
 ## 🎭 Personality Modes
