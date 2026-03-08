@@ -125,7 +125,7 @@ export class SetupWizard {
       const version = this.formData['openclaw-version'] || ''
       return `
         <div class="wizard-field">
-          <div class="wizard-complete">OpenClaw ist installiert ${version ? `(${version})` : ''}</div>
+          <div class="wizard-complete">OpenClaw is installed ${version ? `(${version})` : ''}</div>
         </div>`
     }
 
@@ -133,11 +133,11 @@ export class SetupWizard {
       <div class="wizard-field">
         <div id="openclaw-status">Checking...</div>
         <div style="margin-top: 10px; font-size: 12px; color: #555;">
-          <strong>OpenClaw muss global installiert sein:</strong>
+          <strong>OpenClaw must be installed globally:</strong>
           <pre style="margin: 6px 0; padding: 8px; background: #1e1e1e; color: #d4d4d4; border-radius: 4px; font-size: 11px;">npm install -g openclaw</pre>
-          <div style="margin-top: 4px;">Braucht <strong>Node.js 22.12+</strong> — download: <span class="chat-link" data-url="https://nodejs.org">nodejs.org</span></div>
+          <div style="margin-top: 4px;">Requires <strong>Node.js 22.12+</strong> — download: <span class="chat-link" data-url="https://nodejs.org">nodejs.org</span></div>
         </div>
-        <button class="wizard-oauth-btn" id="openclaw-recheck" style="margin-top: 10px;">Nochmal checken</button>
+        <button class="wizard-oauth-btn" id="openclaw-recheck" style="margin-top: 10px;">Check again</button>
       </div>`
   }
 
@@ -158,7 +158,7 @@ export class SetupWizard {
       nextBtn.addEventListener('click', () => {
         if (this.flow.currentStepName() === 'openclaw' && !this.formData['openclaw-installed']) {
           const statusEl = this.container.querySelector('#openclaw-status')
-          if (statusEl) statusEl.innerHTML = '<span class="wizard-error">Bitte erst OpenClaw installieren!</span>'
+          if (statusEl) statusEl.innerHTML = '<span class="wizard-error">Please install OpenClaw first!</span>'
           return
         }
         this.collectCurrentFields()
@@ -270,7 +270,7 @@ export class SetupWizard {
       this.renderCurrentStep()
     } else {
       if (statusEl) {
-        statusEl.innerHTML = '<span class="wizard-error">OpenClaw nicht gefunden!</span>'
+        statusEl.innerHTML = '<span class="wizard-error">OpenClaw not found!</span>'
       }
       if (recheckBtn) (recheckBtn as HTMLButtonElement).disabled = false
     }
@@ -299,7 +299,7 @@ export class SetupWizard {
     // Claude OAuth — login already happened via the button click, just complete
     if (this.formData.provider === 'claude-oauth' && !this.formData['claude-login']) {
       this.clippy.speak(
-        '<div class="wizard-error">Bitte erst auf "Login with Claude" klicken!</div>'
+        '<div class="wizard-error">Please click "Login with Claude" first!</div>'
       )
       return
     }
@@ -315,7 +315,7 @@ export class SetupWizard {
     window.clippy.completeSetup(this.formData)
 
     this.clippy.speak(
-      '<div class="wizard-complete">Alles klar, ich bin ready. Ignorier mich oder benutz mich — ich bin eh hier.</div>'
+      '<div class="wizard-complete">All set! Ignore me or use me — I\'m here either way.</div>'
     )
   }
 

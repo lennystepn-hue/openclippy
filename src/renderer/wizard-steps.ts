@@ -18,7 +18,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'openclaw',
     title: 'OpenClaw Engine',
-    clippySays: 'Erstmal checken ob mein Gehirn installiert ist...',
+    clippySays: "Let me check if my brain is installed first...",
     fields: [
       { type: 'openclaw-check', name: 'openclaw-status', label: 'OpenClaw Status' }
     ]
@@ -26,7 +26,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'ai-model',
     title: 'AI Model',
-    clippySays: 'Hey! Ich bin Clippy. Lange nicht gesehen... Klick einfach auf Login with Claude und ich bin connected!',
+    clippySays: "Hey! It's me, Clippy. Long time no see... Just click Login with Claude and we're connected!",
     fields: [
       {
         type: 'select', name: 'provider', label: 'Provider',
@@ -46,7 +46,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'vision',
     title: 'Vision (Screen Awareness)',
-    clippySays: 'Soll ich sehen koennen was du machst? Brauche dafuer ein Vision Model.',
+    clippySays: "Should I be able to see what you're doing? I'll need a vision model for that.",
     fields: [
       {
         type: 'select', name: 'visionProvider', label: 'Vision Provider',
@@ -63,7 +63,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'voice',
     title: 'Voice',
-    clippySays: 'Soll ich reden koennen? Und willst du mit mir sprechen?',
+    clippySays: "Should I be able to talk? And do you want to talk to me?",
     fields: [
       {
         type: 'select', name: 'ttsEngine', label: 'Text-to-Speech',
@@ -81,7 +81,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'integrations',
     title: 'Integrations',
-    clippySays: 'Welche Apps soll ich anbinden? Klick einfach auf Connect.',
+    clippySays: "Which apps should I connect to? Just click Connect.",
     fields: [
       { type: 'oauth-button', name: 'github', label: 'Connect GitHub' },
       { type: 'oauth-button', name: 'gmail', label: 'Connect Gmail' },
@@ -93,7 +93,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'personality',
     title: 'Personality',
-    clippySays: 'Wie soll ich drauf sein?',
+    clippySays: "What vibe should I have?",
     fields: [
       {
         type: 'select', name: 'personality', label: 'Mode',
@@ -108,7 +108,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'hotkeys',
     title: 'Hotkeys',
-    clippySays: 'Wie rufst du mich? Standard ist Ctrl+Shift+C.',
+    clippySays: "How do you summon me? Default is Ctrl+Shift+C.",
     fields: [
       { type: 'hotkey', name: 'hotkey', label: 'Global Hotkey' }
     ]
@@ -116,7 +116,7 @@ export const WIZARD_STEPS: WizardStepDef[] = [
   {
     name: 'autostart',
     title: 'Autostart',
-    clippySays: 'Soll ich immer da sein wenn du den Rechner anmachst?',
+    clippySays: "Should I always be here when you start your computer?",
     fields: [
       { type: 'toggle', name: 'autostart', label: 'Start with system' }
     ]

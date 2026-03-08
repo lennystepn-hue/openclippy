@@ -1,9 +1,12 @@
 {
   "name": "openclippy",
-  "version": "0.4.6",
+  "version": "0.5.0",
   "description": "The iconic Clippy, reborn as an autonomous AI desktop assistant powered by OpenClaw",
   "author": "Lenny Enderle <github@lennystepn-hue>",
   "main": "dist/main/index.js",
+  "bin": {
+    "openclippy": "cli/doctor.mjs"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",

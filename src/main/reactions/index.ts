@@ -44,7 +44,7 @@ const REACTIONS: Record<string, Reaction> = {
     messages: {
       chill: [],
       active: ['Still there?', 'Taking a break?'],
-      chaos: ['Hello?? Lebst du noch?', "I've been sitting here for 30 minutes. Alone. Thanks."]
+      chaos: ['Hello?? Are you still alive?', "I've been sitting here for 30 minutes. Alone. Thanks."]
     }
   }
 }
